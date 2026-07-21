@@ -1,0 +1,109 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { api } from '../api.js';
+
+const STATUS_LABEL = {
+  in_progress: { text: 'En curso', cls: 'pending' },
+  submitted: { text: 'Enviado', cls: 'pass' },
+  timeout: { text: 'Tiempo agotado', cls: 'fail' },
+};
+
+export default function Results() {
+  const { campaignId } = useParams();
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await api.getResults(campaignId);
+        if (!cancelled) setData(res);
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    const interval = setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [campaignId]);
+
+  if (error) return <p className="error-text">{error}</p>;
+  if (!data) return <p className="muted">Cargando resultados...</p>;
+
+  const { campaign, attempts } = data;
+  const candidateLink = `${window.location.origin}/c/${campaign.id}`;
+
+  return (
+    <div>
+      <h1>{campaign.title}</h1>
+      <p className="lede">
+        {campaign.roleLabel} {campaign.company ? `· ${campaign.company}` : ''}
+      </p>
+
+      <div className="card">
+        <label>Enlace para candidatos</label>
+        <div className="link-box">{candidateLink}</div>
+        <button style={{ marginTop: 12 }} onClick={() => navigator.clipboard.writeText(candidateLink)}>
+          Copiar enlace
+        </button>
+      </div>
+
+      <div className="card">
+        <h2>Ranking ({attempts.length} candidatos)</h2>
+        {attempts.length === 0 ? (
+          <p className="muted">Nadie ha tomado el reto todavía. Comparte el enlace de arriba.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Candidato</th>
+                <th>Puntaje</th>
+                <th>Estado</th>
+                <th>Tiempo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attempts.map((a, idx) => {
+                const status = STATUS_LABEL[a.status] || STATUS_LABEL.in_progress;
+                return (
+                  <tr
+                    key={a.id}
+                    className="clickable"
+                    onClick={() => navigate(`/resultados/${campaignId}/intentos/${a.id}`)}
+                  >
+                    <td>{idx + 1}</td>
+                    <td>
+                      {a.candidateName}
+                      <div className="muted" style={{ fontSize: '0.8rem' }}>{a.candidateEmail}</div>
+                    </td>
+                    <td>{a.score ?? '—'}</td>
+                    <td>
+                      <span className={`badge ${status.cls}`}>{status.text}</span>
+                    </td>
+                    <td>{a.durationSeconds != null ? formatDuration(a.durationSeconds) : '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <Link to="/crear" className="muted">
+        + Crear otro reto
+      </Link>
+    </div>
+  );
+}
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
