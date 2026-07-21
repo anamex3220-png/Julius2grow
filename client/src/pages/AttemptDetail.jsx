@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDiagnosisValue } from '../format.js';
 
@@ -15,6 +15,7 @@ export default function AttemptDetail() {
   const [attempt, setAttempt] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([api.getAttempt(attemptId), api.getCampaign(campaignId)])
@@ -32,13 +33,21 @@ export default function AttemptDetail() {
 
   return (
     <div>
-      <Link to={`/resultados/${campaignId}`} className="muted">
-        ← Volver al ranking
-      </Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Link to={`/resultados/${campaignId}`} className="muted">
+          ← Volver al ranking
+        </Link>
+        <DeleteAttemptButton attemptId={attempt.id} campaignId={campaignId} />
+      </div>
       <h1 style={{ marginTop: 12 }}>{attempt.candidateName}</h1>
       <p className="lede">
         {attempt.candidateEmail} · {campaign.skillLabel} · {attempt.status}
       </p>
+      {attempt.consentAcceptedAt && (
+        <p className="muted" style={{ fontSize: '0.78rem', marginTop: -8 }}>
+          Aceptó el aviso de privacidad el {new Date(attempt.consentAcceptedAt).toLocaleString()}
+        </p>
+      )}
 
       <div className="score-row">
         <div className="score-tile">
@@ -61,6 +70,37 @@ export default function AttemptDetail() {
       {attempt.challengeType === 'diagnosis' && <DiagnosisDetail attempt={attempt} campaign={campaign} />}
       {attempt.challengeType === 'scenario' && <ScenarioDetail attempt={attempt} />}
       {attempt.challengeType === 'open' && <OpenDetail attempt={attempt} campaign={campaign} onGraded={setAttempt} />}
+    </div>
+  );
+}
+
+function DeleteAttemptButton({ attemptId, campaignId }) {
+  const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      'Esto borra permanentemente las respuestas y datos de este candidato. ¿Confirmas que quieres eliminarlo?'
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.deleteAttempt(attemptId);
+      navigate(`/resultados/${campaignId}`);
+    } catch (err) {
+      setError(err.message);
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div>
+      <button className="secondary" style={{ fontSize: '0.8rem', padding: '6px 12px' }} onClick={handleDelete} disabled={deleting}>
+        {deleting ? 'Eliminando...' : '🗑 Eliminar este intento'}
+      </button>
+      {error && <p className="error-text">{error}</p>}
     </div>
   );
 }

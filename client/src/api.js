@@ -42,4 +42,5 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ questionId, score, notes }),
     }),
+  deleteAttempt: (attemptId) => request(`/attempts/${attemptId}`, { method: 'DELETE' }),
 };

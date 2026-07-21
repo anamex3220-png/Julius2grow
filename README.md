@@ -114,6 +114,53 @@ desglosadas en el detalle del intento. Aplican a los tipos `scenario` y
 `open` — los tipos `code`/`diagnosis` no bloquean pegar porque ahí sí es
 legítimo que el candidato pegue su propio código o un valor.
 
+## Datos de candidatos: privacidad, borrado y persistencia
+
+La plataforma sí guarda lo que responde cada candidato — nombre, correo (si
+lo da), sus respuestas completas, puntaje, y las señales de integridad. Eso
+es necesario para que el ranking y la calificación funcionen. Lo que existe
+para manejar eso con cuidado:
+
+- **Aviso + consentimiento**: antes de empezar, el candidato ve qué se
+  guarda y para qué, con una casilla obligatoria para aceptar
+  (`CandidateStart.jsx`). El servidor rechaza crear el intento si no llega
+  `consent: true`, y guarda `consentAcceptedAt` en el intento como registro.
+- **Correo de contacto por campaña**: al crear un reto (catálogo o
+  personalizado) puedes poner un correo de contacto opcional; si lo pones,
+  el aviso de privacidad le dice al candidato a dónde escribir para pedir
+  que se borre su información.
+- **Borrado manual**: en el detalle de cualquier intento hay un botón
+  "🗑 Eliminar este intento" que lo borra por completo
+  (`DELETE /api/attempts/:id`). No hay borrado automático por tiempo — es
+  una acción explícita cuando alguien lo pide.
+
+### Que los datos sobrevivan a un redeploy (disco persistente en Render)
+
+Por default, todo se guarda en `server/data/db.json`, un archivo plano. El
+código ya lee la ubicación de ese archivo de la variable de entorno
+`DATA_DIR` (`server/lib/db.js`) para poder apuntarlo a un disco que no se
+borre nunca — pero hay que crear ese disco una vez desde el dashboard de
+Render (no basta con hacer push del `render.yaml` actualizado, porque
+cambiar el plan y agregar un disco a un servicio que ya existe implica un
+cambio de costo que Render no aplica solo):
+
+1. Entra a tu servicio en Render → **Settings**.
+2. En **Instance Type**, cambia del plan Free a un plan pagado (el
+   dashboard te muestra el costo actual antes de confirmar — el disco
+   persistente no está disponible en Free).
+3. Busca la sección **Disks** → **Add Disk**. Ponle un nombre (ej.
+   `julius2grow-data`), como **Mount Path** usa `/var/data`, y déjalo en 1GB
+   (de sobra para esto).
+4. En **Environment**, agrega la variable `DATA_DIR` con el valor
+   `/var/data` (mismo valor que el Mount Path).
+5. Guarda — Render va a reiniciar el servicio con el disco ya montado. De
+   ahí en adelante, los datos sobreviven a redeploys y reinicios.
+
+El archivo `render.yaml` ya quedó actualizado con esta configuración
+(`plan: starter`, disco, y la env var), así que un servicio nuevo creado
+desde ese Blueprint la trae de una vez — los pasos de arriba son solo para
+migrar el servicio que ya tienes corriendo.
+
 ## Flujo
 
 1. **Reclutador**: entra a `/crear`, elige el skill del catálogo, pone el
@@ -167,8 +214,9 @@ concepto. Antes de producción hace falta, como mínimo:
 - **Sandbox más fuerte para los retos tipo `code`**: `node:vm` con timeout
   basta para un demo, pero para producción conviene `isolated-vm`, un
   worker con seccomp, o un servicio tipo Judge0.
-- **Base de datos real** (Postgres/SQLite) en vez de un archivo JSON, para
-  manejar concurrencia y volumen.
+- **Base de datos real** (Postgres/SQLite) en vez de un archivo JSON — con
+  disco persistente los datos ya sobreviven a un redeploy, pero un archivo
+  plano sigue sin manejar bien escrituras concurrentes ni volumen alto.
 - **Los escenarios (`support`, `content`) son reglas, no un LLM real** —
   detectan palabras clave por dimensión. Es intencional: no depende de una
   API key externa y es 100% determinista para el demo. `nextScenarioMessage`

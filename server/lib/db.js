@@ -3,7 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, '..', 'data');
+// DATA_DIR es configurable vía env var para poder apuntarlo a un disco
+// persistente en producción (el default, relativo al repo, se borra en
+// cada redeploy en un plan sin disco).
+const DATA_DIR = process.env.DATA_DIR || join(__dirname, '..', 'data');
 const DB_FILE = join(DATA_DIR, 'db.json');
 
 function load() {
@@ -44,5 +47,12 @@ export const db = {
     Object.assign(attempt, patch);
     save(state);
     return attempt;
+  },
+  deleteAttempt: (id) => {
+    const index = state.attempts.findIndex((a) => a.id === id);
+    if (index === -1) return false;
+    state.attempts.splice(index, 1);
+    save(state);
+    return true;
   },
 };

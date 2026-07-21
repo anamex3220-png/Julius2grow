@@ -7,6 +7,7 @@ export default function CandidateStart() {
   const [campaign, setCampaign] = useState(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function CandidateStart() {
     setError('');
     setLoading(true);
     try {
-      const attempt = await api.startAttempt(campaignId, { candidateName: name, candidateEmail: email });
+      const attempt = await api.startAttempt(campaignId, { candidateName: name, candidateEmail: email, consent });
       navigate(`/c/${campaignId}/reto/${attempt.id}`);
     } catch (err) {
       setError(err.message);
@@ -49,6 +50,19 @@ export default function CandidateStart() {
         </p>
       </div>
 
+      <div className="card">
+        <h2 style={{ fontSize: '1rem' }}>Aviso de privacidad</h2>
+        <p className="muted" style={{ fontSize: '0.88rem' }}>
+          Al resolver este reto se guardan tu nombre, correo (si lo dejas), tus respuestas, tu puntaje, y
+          algunas señales técnicas de la sesión (por ejemplo si pegaste texto o cambiaste de pestaña).
+          Esta información la usa el equipo de reclutamiento únicamente para evaluar tu desempeño en este
+          proceso.{' '}
+          {campaign.contactEmail
+            ? `Si quieres pedir que se elimine tu información, escribe a ${campaign.contactEmail}.`
+            : 'Si quieres pedir que se elimine tu información, contacta a quien te compartió este enlace.'}
+        </p>
+      </div>
+
       <form className="card" onSubmit={handleSubmit}>
         <label htmlFor="name">Tu nombre</label>
         <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -56,9 +70,20 @@ export default function CandidateStart() {
         <label htmlFor="email">Tu correo (opcional)</label>
         <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
+        <label htmlFor="consent" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontWeight: 400 }}>
+          <input
+            id="consent"
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <span>Acepto que mis respuestas y datos se guarden y se compartan con el equipo de reclutamiento para fines de evaluación.</span>
+        </label>
+
         {error && <p className="error-text">{error}</p>}
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading || !consent}>
           {loading ? 'Preparando...' : 'Empezar reto'}
         </button>
       </form>

@@ -35,6 +35,7 @@ function publicCampaign(campaign) {
     categoryLabel: skill ? CATEGORY_LABELS[skill.category] : 'Personalizado',
     title: campaign.title,
     company: campaign.company,
+    contactEmail: campaign.contactEmail || '',
     createdAt: campaign.createdAt,
     timeLimitSeconds: campaign.timeLimitSeconds,
     integrityMode: campaign.integrityMode || 'signals',
@@ -68,7 +69,7 @@ app.get('/api/question-bank', (req, res) => {
 // --- Campañas (reclutador) ---
 
 app.post('/api/campaigns', (req, res) => {
-  const { skillId, title, company } = req.body || {};
+  const { skillId, title, company, contactEmail } = req.body || {};
   const skill = SKILLS[skillId];
   if (!skill) {
     return res.status(400).json({ error: 'Skill inválido.' });
@@ -83,6 +84,7 @@ app.post('/api/campaigns', (req, res) => {
     challengeType: skill.type,
     title: title.trim(),
     company: (company || '').trim(),
+    contactEmail: (contactEmail || '').trim(),
     createdAt: new Date().toISOString(),
     timeLimitSeconds: skill.timeLimitSeconds,
     integrityMode: 'signals',
@@ -102,6 +104,7 @@ app.post('/api/campaigns/custom', (req, res) => {
       customLabel: 'Reto personalizado',
       title: (req.body?.title || '').trim(),
       company: (req.body?.company || '').trim(),
+      contactEmail: (req.body?.contactEmail || '').trim(),
       createdAt: new Date().toISOString(),
       timeLimitSeconds: built.timeLimitSeconds,
       integrityMode: built.integrityMode,
@@ -137,9 +140,12 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
 
-  const { candidateName, candidateEmail } = req.body || {};
+  const { candidateName, candidateEmail, consent } = req.body || {};
   if (!candidateName || !candidateName.trim()) {
     return res.status(400).json({ error: 'El nombre es obligatorio.' });
+  }
+  if (consent !== true) {
+    return res.status(400).json({ error: 'Debes aceptar el aviso de privacidad para empezar.' });
   }
 
   const attempt = {
@@ -150,6 +156,7 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
     integrityMode: campaign.integrityMode || 'signals',
     candidateName: candidateName.trim(),
     candidateEmail: (candidateEmail || '').trim(),
+    consentAcceptedAt: new Date().toISOString(),
     startedAt: new Date().toISOString(),
     timeLimitSeconds: campaign.timeLimitSeconds,
     status: 'in_progress',
@@ -275,6 +282,15 @@ app.post('/api/attempts/:id/grade', (req, res) => {
   });
 
   res.json(publicAttempt(updated));
+});
+
+// Borrado manual de un intento, por ejemplo cuando un candidato pide que se
+// elimine su información. No hay borrado automático por tiempo — es una
+// acción explícita del reclutador.
+app.delete('/api/attempts/:id', (req, res) => {
+  const deleted = db.deleteAttempt(req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'Intento no encontrado.' });
+  res.json({ ok: true });
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));

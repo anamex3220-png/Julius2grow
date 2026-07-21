@@ -2,9 +2,17 @@ services:
   - type: web
     name: julius2grow
     runtime: node
-    plan: free
+    # El plan "free" no admite disco persistente — hace falta un plan pagado
+    # (revisa el costo actual en el dashboard de Render al confirmarlo).
+    plan: starter
     buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: julius2grow-data
+      mountPath: /var/data
+      sizeGB: 1

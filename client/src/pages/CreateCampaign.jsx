@@ -24,6 +24,7 @@ export default function CreateCampaign() {
   // Compartidos
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
 
   // Constructor personalizado
   const [minutes, setMinutes] = useState(20);
@@ -74,7 +75,7 @@ export default function CreateCampaign() {
     setError('');
     setLoading(true);
     try {
-      const campaign = await api.createCampaign({ skillId, title, company });
+      const campaign = await api.createCampaign({ skillId, title, company, contactEmail });
       setCreated(campaign);
     } catch (err) {
       setError(err.message);
@@ -91,6 +92,7 @@ export default function CreateCampaign() {
       const campaign = await api.createCustomCampaign({
         title,
         company,
+        contactEmail,
         timeLimitMinutes: minutes,
         integrityMode,
         challenge: {
@@ -185,6 +187,15 @@ export default function CreateCampaign() {
           <label htmlFor="company">Empresa (opcional)</label>
           <input id="company" type="text" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Ej. Julius" />
 
+          <label htmlFor="contact-email">Correo de contacto para candidatos (opcional)</label>
+          <input
+            id="contact-email"
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            placeholder="Se muestra en el aviso de privacidad, para pedir borrado de datos"
+          />
+
           {error && <p className="error-text">{error}</p>}
 
           <button type="submit" disabled={loading || !skillId}>
@@ -198,6 +209,15 @@ export default function CreateCampaign() {
 
           <label htmlFor="c-company">Empresa (opcional)</label>
           <input id="c-company" type="text" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Ej. Julius" />
+
+          <label htmlFor="c-contact-email">Correo de contacto para candidatos (opcional)</label>
+          <input
+            id="c-contact-email"
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            placeholder="Se muestra en el aviso de privacidad, para pedir borrado de datos"
+          />
 
           <label htmlFor="c-minutes">Minutos para responder</label>
           <input
