@@ -8,6 +8,11 @@ const STATUS_LABEL = {
   timeout: { text: 'Tiempo agotado', cls: 'fail' },
 };
 
+function hasIntegrityFlags(integrity) {
+  if (!integrity) return false;
+  return integrity.pasteCount > 0 || integrity.tabSwitchCount > 0 || integrity.fullscreenExits > 0 || integrity.suspiciousInputRatio;
+}
+
 export default function Results() {
   const { campaignId } = useParams();
   const [data, setData] = useState(null);
@@ -70,7 +75,8 @@ export default function Results() {
             </thead>
             <tbody>
               {attempts.map((a, idx) => {
-                const status = STATUS_LABEL[a.status] || STATUS_LABEL.in_progress;
+                const pending = a.status === 'submitted' && a.challengeType === 'open' && a.detail?.pendingReview;
+                const status = pending ? { text: 'Pendiente de revisión', cls: 'pending' } : STATUS_LABEL[a.status] || STATUS_LABEL.in_progress;
                 return (
                   <tr
                     key={a.id}
@@ -79,7 +85,7 @@ export default function Results() {
                   >
                     <td>{idx + 1}</td>
                     <td>
-                      {a.candidateName}
+                      {a.candidateName} {hasIntegrityFlags(a.integrity) && <span title="Tiene señales de integridad">⚠️</span>}
                       <div className="muted" style={{ fontSize: '0.8rem' }}>{a.candidateEmail}</div>
                     </td>
                     <td>{a.score ?? '—'}</td>

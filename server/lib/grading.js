@@ -108,3 +108,45 @@ export function gradeScenarioChallenge(transcript, secret) {
     detail: { dimensions: dimensionScores, negativeHits, tooShort, tooLong },
   };
 }
+
+// Retos "open" (armados por el reclutador): una o más preguntas abiertas.
+// Si una pregunta trae `rubric` (palabras clave), se autocalifica por
+// coincidencia de palabras — igual que el resto del motor, sin fingir
+// entender la respuesta. Si no trae rubric, queda marcada para que el
+// reclutador la califique a mano leyendo la respuesta (ver
+// recomputeOpenScore, usada también después de calificar manualmente).
+export function gradeOpenChallenge(answers, questions) {
+  const perQuestion = questions.map((q) => {
+    const text = (answers?.[q.id] || '').trim();
+    let autoScore = null;
+    if (q.rubric && text) {
+      const hits = q.rubric.words.filter((w) => text.toLowerCase().includes(w)).length;
+      autoScore = Math.min(100, hits * (q.rubric.hitValue || 34));
+    }
+    return {
+      id: q.id,
+      criterion: q.criterion,
+      answered: text.length > 0,
+      autoScore,
+      manualScore: null,
+      manualNotes: '',
+      needsManualReview: !q.rubric,
+    };
+  });
+
+  return finalizeOpenScore(perQuestion);
+}
+
+export function finalizeOpenScore(perQuestion) {
+  const finalScores = perQuestion
+    .map((q) => (q.manualScore ?? q.autoScore))
+    .filter((s) => s != null);
+  const score = finalScores.length > 0 ? Math.round(finalScores.reduce((s, v) => s + v, 0) / finalScores.length) : null;
+  const pendingReview = perQuestion.some((q) => q.needsManualReview && q.manualScore == null);
+
+  return {
+    score,
+    passed: pendingReview ? null : score != null ? score >= 60 : null,
+    detail: { perQuestion, pendingReview },
+  };
+}

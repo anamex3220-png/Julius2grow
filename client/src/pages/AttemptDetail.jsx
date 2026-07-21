@@ -3,6 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { formatDiagnosisValue } from '../format.js';
 
+const CRITERION_LABEL = {
+  logica: 'Lógica aplicada',
+  conocimiento: 'Conocimiento aplicado',
+  soft_skill: 'Soft skill',
+};
+
 export default function AttemptDetail() {
   const { campaignId, attemptId } = useParams();
   const [attempt, setAttempt] = useState(null);
@@ -20,6 +26,8 @@ export default function AttemptDetail() {
 
   if (error) return <p className="error-text">{error}</p>;
   if (!attempt || !campaign) return <p className="muted">Cargando...</p>;
+
+  const pending = attempt.challengeType === 'open' && attempt.detail?.pendingReview;
 
   return (
     <div>
@@ -41,14 +49,49 @@ export default function AttemptDetail() {
           <div className="label">Tiempo</div>
         </div>
         <div className="score-tile">
-          <div className="value">{attempt.passed === null ? '—' : attempt.passed ? 'Sí' : 'No'}</div>
+          <div className="value">{pending ? 'Pendiente' : attempt.passed === null ? '—' : attempt.passed ? 'Sí' : 'No'}</div>
           <div className="label">Aprobó</div>
         </div>
       </div>
 
+      <IntegrityCard integrity={attempt.integrity} />
+
       {attempt.challengeType === 'code' && <CodeDetail attempt={attempt} />}
       {attempt.challengeType === 'diagnosis' && <DiagnosisDetail attempt={attempt} campaign={campaign} />}
       {attempt.challengeType === 'scenario' && <ScenarioDetail attempt={attempt} />}
+      {attempt.challengeType === 'open' && <OpenDetail attempt={attempt} campaign={campaign} onGraded={setAttempt} />}
+    </div>
+  );
+}
+
+function IntegrityCard({ integrity }) {
+  if (!integrity) return null;
+  const flags = [];
+  if (integrity.pasteCount > 0) flags.push(`Pegó texto ${integrity.pasteCount} ${integrity.pasteCount === 1 ? 'vez' : 'veces'}`);
+  if (integrity.tabSwitchCount > 0)
+    flags.push(`Cambió de pestaña ${integrity.tabSwitchCount} ${integrity.tabSwitchCount === 1 ? 'vez' : 'veces'} (${integrity.awaySeconds}s fuera)`);
+  if (integrity.fullscreenExits > 0) flags.push(`Salió de pantalla completa ${integrity.fullscreenExits} veces`);
+  if (integrity.suspiciousInputRatio) flags.push('Apareció más texto del que escribió con el teclado (posible inserción no tipeada)');
+
+  if (flags.length === 0) {
+    return (
+      <div className="card">
+        <p className="muted" style={{ margin: 0 }}>✅ Sin señales de alerta durante el reto.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card" style={{ borderColor: 'var(--warn)' }}>
+      <p style={{ margin: '0 0 8px', fontWeight: 700 }}>⚠️ Señales de integridad</p>
+      <ul className="muted" style={{ margin: 0, paddingLeft: 20 }}>
+        {flags.map((f, i) => (
+          <li key={i}>{f}</li>
+        ))}
+      </ul>
+      <p className="muted" style={{ fontSize: '0.78rem', marginTop: 8, marginBottom: 0 }}>
+        Esto no es prueba de nada — son señales para que tú decidas cuánto pesan.
+      </p>
     </div>
   );
 }
@@ -146,6 +189,98 @@ function ScenarioDetail({ attempt }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function OpenDetail({ attempt, campaign, onGraded }) {
+  const perQuestion = attempt.detail?.perQuestion || [];
+  const questions = campaign.challenge.questions || [];
+
+  return (
+    <div className="card">
+      <h2>Respuestas</h2>
+      {questions.map((q, i) => {
+        const grading = perQuestion.find((p) => p.id === q.id);
+        const answerText = attempt.submittedAnswer?.answers?.[q.id] || '(sin responder)';
+        return (
+          <OpenQuestionAnswer
+            key={q.id}
+            index={i}
+            question={q}
+            answerText={answerText}
+            grading={grading}
+            attemptId={attempt.id}
+            onGraded={onGraded}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function OpenQuestionAnswer({ index, question, answerText, grading, attemptId, onGraded }) {
+  const [score, setScore] = useState(grading?.manualScore ?? '');
+  const [notes, setNotes] = useState(grading?.manualNotes ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const finalScore = grading?.manualScore ?? grading?.autoScore;
+
+  async function handleSave() {
+    setError('');
+    setSaving(true);
+    try {
+      const updated = await api.gradeQuestion(attemptId, question.id, score, notes);
+      onGraded(updated);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
+      <p style={{ marginBottom: 6 }}>
+        <strong>
+          {index + 1}. {question.text}
+        </strong>{' '}
+        <span className="badge pending">{CRITERION_LABEL[question.criterion] || question.criterion}</span>
+      </p>
+      <div className="link-box" style={{ whiteSpace: 'pre-wrap', marginBottom: 10 }}>
+        {answerText}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <span className="muted" style={{ fontSize: '0.85rem' }}>
+          {grading?.autoScore != null ? `Puntaje automático: ${grading.autoScore}` : 'Sin rúbrica automática'}
+        </span>
+        {finalScore != null && <span className="badge pass">Final: {finalScore}</span>}
+      </div>
+
+      <label htmlFor={`score-${question.id}`}>Calificación manual (0-100)</label>
+      <input
+        id={`score-${question.id}`}
+        type="number"
+        min={0}
+        max={100}
+        value={score}
+        onChange={(e) => setScore(e.target.value)}
+        style={{ maxWidth: 140 }}
+      />
+      <label htmlFor={`notes-${question.id}`}>Notas (opcional)</label>
+      <textarea
+        id={`notes-${question.id}`}
+        rows={2}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Por qué le diste esta calificación..."
+      />
+      {error && <p className="error-text">{error}</p>}
+      <button className="secondary" onClick={handleSave} disabled={saving || score === ''}>
+        {saving ? 'Guardando...' : 'Guardar calificación'}
+      </button>
     </div>
   );
 }

@@ -6,10 +6,14 @@ import { fileURLToPath } from 'node:url';
 import { nanoid } from 'nanoid';
 import { db } from './lib/db.js';
 import { SKILLS, CATEGORY_LABELS, nextScenarioMessage } from './lib/skills.js';
+import { buildCustomChallenge, ValidationError, CRITERIA } from './lib/customChallenge.js';
+import { QUESTION_BANK, AREA_LABELS } from './lib/questionBank.js';
 import {
   gradeCodeChallenge,
   gradeDiagnosisChallenge,
   gradeScenarioChallenge,
+  gradeOpenChallenge,
+  finalizeOpenScore,
 } from './lib/grading.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,23 +21,24 @@ const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '4mb' })); // margen sobre el cap de imagen (~2MB) en base64
 
 const PORT = process.env.PORT || 4000;
 
 function publicCampaign(campaign) {
-  const skill = SKILLS[campaign.skillId];
+  const skill = campaign.skillId ? SKILLS[campaign.skillId] : null;
   return {
     id: campaign.id,
     skillId: campaign.skillId,
-    skillLabel: skill.label,
-    category: skill.category,
-    categoryLabel: CATEGORY_LABELS[skill.category],
+    skillLabel: skill ? skill.label : campaign.customLabel || 'Reto personalizado',
+    category: skill ? skill.category : 'custom',
+    categoryLabel: skill ? CATEGORY_LABELS[skill.category] : 'Personalizado',
     title: campaign.title,
     company: campaign.company,
     createdAt: campaign.createdAt,
     timeLimitSeconds: campaign.timeLimitSeconds,
-    challenge: { type: skill.type, ...campaign.challenge.public },
+    integrityMode: campaign.integrityMode || 'signals',
+    challenge: { type: campaign.challengeType, ...campaign.challenge.public },
   };
 }
 
@@ -42,7 +47,7 @@ function publicAttempt(attempt) {
   return rest;
 }
 
-// --- Catálogo de skills ---
+// --- Catálogo de skills y banco de preguntas ---
 
 app.get('/api/skills', (req, res) => {
   const skills = Object.values(SKILLS).map((s) => ({
@@ -54,6 +59,10 @@ app.get('/api/skills', (req, res) => {
     categoryLabel: CATEGORY_LABELS[s.category],
   }));
   res.json({ skills, categories: CATEGORY_LABELS });
+});
+
+app.get('/api/question-bank', (req, res) => {
+  res.json({ questions: QUESTION_BANK, areaLabels: AREA_LABELS, criteria: CRITERIA });
 });
 
 // --- Campañas (reclutador) ---
@@ -71,14 +80,39 @@ app.post('/api/campaigns', (req, res) => {
   const campaign = {
     id: nanoid(10),
     skillId,
+    challengeType: skill.type,
     title: title.trim(),
     company: (company || '').trim(),
     createdAt: new Date().toISOString(),
     timeLimitSeconds: skill.timeLimitSeconds,
+    integrityMode: 'signals',
     challenge: skill.build(),
   };
   db.addCampaign(campaign);
   res.status(201).json(publicCampaign(campaign));
+});
+
+app.post('/api/campaigns/custom', (req, res) => {
+  try {
+    const built = buildCustomChallenge(req.body);
+    const campaign = {
+      id: nanoid(10),
+      skillId: null,
+      challengeType: 'open',
+      customLabel: 'Reto personalizado',
+      title: (req.body?.title || '').trim(),
+      company: (req.body?.company || '').trim(),
+      createdAt: new Date().toISOString(),
+      timeLimitSeconds: built.timeLimitSeconds,
+      integrityMode: built.integrityMode,
+      challenge: built.challenge,
+    };
+    db.addCampaign(campaign);
+    res.status(201).json(publicCampaign(campaign));
+  } catch (err) {
+    if (err instanceof ValidationError) return res.status(err.status).json({ error: err.message });
+    throw err;
+  }
 });
 
 app.get('/api/campaigns/:id', (req, res) => {
@@ -102,7 +136,6 @@ app.get('/api/campaigns/:id/results', (req, res) => {
 app.post('/api/campaigns/:id/attempts', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
-  const skill = SKILLS[campaign.skillId];
 
   const { candidateName, candidateEmail } = req.body || {};
   if (!candidateName || !candidateName.trim()) {
@@ -113,7 +146,8 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
     id: nanoid(10),
     campaignId: campaign.id,
     skillId: campaign.skillId,
-    challengeType: skill.type,
+    challengeType: campaign.challengeType,
+    integrityMode: campaign.integrityMode || 'signals',
     candidateName: candidateName.trim(),
     candidateEmail: (candidateEmail || '').trim(),
     startedAt: new Date().toISOString(),
@@ -124,8 +158,11 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
     score: null,
     passed: null,
     detail: null,
+    integrity: null,
     transcript:
-      skill.type === 'scenario' ? [{ speaker: 'customer', text: campaign.challenge.secret.openingMessage }] : undefined,
+      campaign.challengeType === 'scenario'
+        ? [{ speaker: 'customer', text: campaign.challenge.secret.openingMessage }]
+        : undefined,
     secretSnapshot: campaign.challenge.secret,
   };
   db.addAttempt(attempt);
@@ -175,7 +212,7 @@ app.post('/api/attempts/:id/submit', (req, res) => {
   const timedOut = durationSeconds > attempt.timeLimitSeconds + 30; // 30s de gracia por red
 
   let gradeResult;
-  const { answer } = req.body || {};
+  const { answer, integrity } = req.body || {};
 
   if (timedOut) {
     gradeResult = { score: 0, passed: false, detail: { reason: 'tiempo agotado' } };
@@ -186,6 +223,8 @@ app.post('/api/attempts/:id/submit', (req, res) => {
     gradeResult = gradeDiagnosisChallenge(answer || {}, attempt.secretSnapshot);
   } else if (attempt.challengeType === 'scenario') {
     gradeResult = gradeScenarioChallenge(attempt.transcript || [], attempt.secretSnapshot);
+  } else if (attempt.challengeType === 'open') {
+    gradeResult = gradeOpenChallenge(answer?.answers || {}, attempt.secretSnapshot.questions);
   } else {
     return res.status(400).json({ error: 'Tipo de reto desconocido.' });
   }
@@ -198,6 +237,41 @@ app.post('/api/attempts/:id/submit', (req, res) => {
     passed: gradeResult.passed,
     detail: gradeResult.detail,
     submittedAnswer: answer,
+    integrity: integrity || null,
+  });
+
+  res.json(publicAttempt(updated));
+});
+
+// Calificación manual de preguntas abiertas sin rúbrica de palabras clave
+// (o para ajustar/anular la calificación automática de las que sí traen).
+app.post('/api/attempts/:id/grade', (req, res) => {
+  const attempt = db.getAttempt(req.params.id);
+  if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
+  if (attempt.challengeType !== 'open') {
+    return res.status(400).json({ error: 'Solo los retos personalizados se califican manualmente aquí.' });
+  }
+  if (!attempt.detail || !Array.isArray(attempt.detail.perQuestion)) {
+    return res.status(400).json({ error: 'Este intento todavía no tiene respuestas que calificar.' });
+  }
+
+  const { questionId, score, notes } = req.body || {};
+  const question = attempt.detail.perQuestion.find((q) => q.id === questionId);
+  if (!question) return res.status(404).json({ error: 'Pregunta no encontrada en este intento.' });
+
+  const numericScore = Number(score);
+  if (Number.isNaN(numericScore) || numericScore < 0 || numericScore > 100) {
+    return res.status(400).json({ error: 'La calificación debe ser un número entre 0 y 100.' });
+  }
+
+  question.manualScore = numericScore;
+  question.manualNotes = (notes || '').trim();
+
+  const regraded = finalizeOpenScore(attempt.detail.perQuestion);
+  const updated = db.updateAttempt(attempt.id, {
+    detail: regraded.detail,
+    score: regraded.score,
+    passed: regraded.passed,
   });
 
   res.json(publicAttempt(updated));

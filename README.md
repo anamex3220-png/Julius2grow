@@ -40,6 +40,11 @@ Tres motores de calificación genéricos cubren cualquier posición nueva:
   respuestas de la otra persona (`branches`) también son datos: qué
   dimensiones necesita haber tocado el candidato para desbloquear cada
   réplica.
+- **`open`** — una o más preguntas abiertas armadas por el reclutador (ver
+  "Retos personalizados" abajo), con contexto opcional (texto, imagen,
+  tabla). Si una pregunta trae palabras clave, se autocalifica igual que
+  `scenario`; si no, queda pendiente hasta que el reclutador la califique a
+  mano desde el detalle del intento.
 
 ### Agregar una posición nueva
 
@@ -51,9 +56,55 @@ Tres motores de calificación genéricos cubren cualquier posición nueva:
    (`server/lib/grading.js`); el picker, el detalle de resultados y la
    pantalla del candidato ya renderizan por `type`, no por skill.
 
-Cada reto tiene un límite de 15 minutos, controlado tanto en el cliente
-(temporizador visible) como en el servidor (un envío después del límite +30s
-de gracia se marca como `timeout` y puntúa 0).
+Cada reto tiene un límite de tiempo (15 min en el catálogo, configurable en
+los retos personalizados), controlado tanto en el cliente (temporizador
+visible) como en el servidor (un envío después del límite +30s de gracia se
+marca como `timeout` y puntúa 0).
+
+## Retos personalizados (constructor + banco de preguntas)
+
+En `/crear`, además del catálogo, hay un modo "Crear el mío" para reclutadores
+que quieren armar su propio reto — sin código:
+
+- **Contexto**: texto libre, una imagen (arrastrar/subir un archivo, se
+  guarda como data URI en el JSON — sin cuenta de almacenamiento externo;
+  cap de ~2MB) y/o una tabla de datos editable (agregar columnas y filas
+  desde la UI).
+- **Preguntas abiertas y elaboradas** (no opción múltiple), cada una
+  etiquetada con el criterio que mide: **lógica aplicada al puesto**,
+  **conocimiento aplicado**, o **soft skill**. Cada pregunta puede traer
+  palabras clave esperadas (autocalifica) o quedar en blanco (el reclutador
+  la lee y la califica manualmente desde el detalle del intento, con nota
+  opcional — ver `POST /api/attempts/:id/grade`).
+- **Banco de preguntas** (`server/lib/questionBank.js`, expuesto en
+  `GET /api/question-bank`): 15 preguntas situacionales ya escritas (3
+  criterios × 5 áreas de marketing — Paid Media, SEO, Content, CRM,
+  Automation) que se insertan con un clic desde el constructor y se pueden
+  editar libremente.
+
+## Anti-IA
+
+No existe una forma de garantizar al 100% que un candidato no consultó una
+IA en otro dispositivo — cualquier producto que lo prometa está exagerando.
+Lo que sí se puede hacer es poner fricción y dejar señales para que el
+reclutador decida. Cada reto personalizado elige un modo (`integrityMode`):
+
+- **`signals`** (default) — no bloquea nada, pero detecta y muestra en el
+  detalle del intento: cuántas veces se intentó pegar texto, cuántas veces
+  se cambió de pestaña/ventana (y cuánto tiempo estuvo fuera), y si apareció
+  más texto del que se tecleó (proxy de "algo insertó texto sin que lo
+  escribieran" — autocompletado, extensión, u otra vía).
+- **`strict`** — todo lo anterior, más: pegar texto queda deshabilitado de
+  verdad en las respuestas (`preventDefault` en el evento `paste`) y se
+  solicita pantalla completa al candidato (los navegadores no permiten
+  bloquear la tecla Esc, así que se detectan y cuentan las salidas en vez de
+  impedirlas).
+
+Estas señales viven en `client/src/integrity.js` (se activan por textarea vía
+`ref`) y se guardan en `attempt.integrity`, visibles como ⚠️ en el ranking y
+desglosadas en el detalle del intento. Aplican a los tipos `scenario` y
+`open` — los tipos `code`/`diagnosis` no bloquean pegar porque ahí sí es
+legítimo que el candidato pegue su propio código o un valor.
 
 ## Flujo
 
@@ -75,19 +126,29 @@ Monorepo con dos workspaces npm:
 
 ```
 server/   API en Express (Node, ESM)
-  index.js       rutas HTTP
-  lib/skills.js  catálogo de skills — contenido de cada reto (lo público
-                 que ve el candidato + la clave de calificación, que nunca
-                 se envía al cliente)
-  lib/grading.js motor de calificación genérico por `type` (code/diagnosis/
-                 scenario), sin lógica específica de ningún skill
-  lib/db.js      persistencia en un JSON plano (server/data/db.json)
+  index.js               rutas HTTP
+  lib/skills.js          catálogo de skills — contenido de cada reto (lo
+                         público que ve el candidato + la clave de
+                         calificación, que nunca se envía al cliente)
+  lib/customChallenge.js valida/normaliza los retos "open" armados por el
+                         reclutador (constructor)
+  lib/questionBank.js    banco de preguntas situacionales para el constructor
+  lib/grading.js         motor de calificación genérico por `type`
+                         (code/diagnosis/scenario/open), sin lógica
+                         específica de ningún skill
+  lib/db.js              persistencia en un JSON plano (server/data/db.json)
 
 client/   SPA en React + Vite + react-router
-  src/format.js         formateo de valores para retos tipo "diagnosis"
-  src/pages/            páginas (crear reto, resultados, detalle, flujo candidato)
-  src/components/       CodeChallenge / DiagnosisChallenge / ScenarioChallenge
-                         (uno por `type`, genéricos — no por skill) + Timer
+  src/format.js               formateo de valores para retos tipo "diagnosis"
+  src/integrity.js            hook de señales anti-IA (paste/tab-switch/
+                               keystroke/fullscreen)
+  src/pages/                  páginas (crear reto —con el constructor—,
+                               resultados, detalle, flujo candidato)
+  src/components/             CodeChallenge / DiagnosisChallenge /
+                               ScenarioChallenge / OpenChallenge (uno por
+                               `type`, genéricos — no por skill) + Timer +
+                               TableEditor / ImageUploadField /
+                               QuestionBankPicker (constructor)
 ```
 
 No hay base de datos externa ni autenticación — es un MVP para validar el

@@ -5,6 +5,7 @@ import Timer from '../components/Timer.jsx';
 import CodeChallenge from '../components/CodeChallenge.jsx';
 import ScenarioChallenge from '../components/ScenarioChallenge.jsx';
 import DiagnosisChallenge from '../components/DiagnosisChallenge.jsx';
+import OpenChallenge from '../components/OpenChallenge.jsx';
 
 export default function CandidateChallenge() {
   const { campaignId, attemptId } = useParams();
@@ -29,12 +30,12 @@ export default function CandidateChallenge() {
   }, [attemptId, campaignId]);
 
   const handleSubmit = useCallback(
-    async (answer) => {
+    async (answer, integrity) => {
       if (submittedRef.current) return;
       submittedRef.current = true;
       setSubmitting(true);
       try {
-        const updated = await api.submitAttempt(attemptId, answer);
+        const updated = await api.submitAttempt(attemptId, answer, integrity);
         setResult(updated);
       } catch (err) {
         setError(err.message);
@@ -54,20 +55,25 @@ export default function CandidateChallenge() {
   if (!attempt || !campaign) return <p className="muted">Cargando...</p>;
 
   if (result) {
+    const pending = result.passed === null && result.status !== 'timeout';
     return (
       <div>
         <h1>{result.status === 'timeout' ? 'Se acabó el tiempo' : '¡Reto enviado!'}</h1>
         <div className="score-row">
           <div className="score-tile">
-            <div className="value">{result.score ?? 0}</div>
+            <div className="value">{result.score ?? '—'}</div>
             <div className="label">Puntaje</div>
           </div>
           <div className="score-tile">
-            <div className="value">{result.passed ? 'Sí' : 'No'}</div>
+            <div className="value">{pending ? 'Pendiente' : result.passed ? 'Sí' : 'No'}</div>
             <div className="label">Aprobó</div>
           </div>
         </div>
-        <p className="muted">Gracias por tu tiempo. El equipo de reclutamiento revisará tu resultado.</p>
+        <p className="muted">
+          {pending
+            ? 'Algunas respuestas necesitan revisión manual del reclutador antes del resultado final.'
+            : 'Gracias por tu tiempo. El equipo de reclutamiento revisará tu resultado.'}
+        </p>
       </div>
     );
   }
@@ -85,6 +91,15 @@ export default function CandidateChallenge() {
         <ScenarioChallenge
           attemptId={attemptId}
           challenge={campaign.challenge}
+          integrityMode={campaign.integrityMode}
+          onSubmit={handleSubmit}
+          submitting={submitting}
+        />
+      )}
+      {campaign.challenge.type === 'open' && (
+        <OpenChallenge
+          challenge={campaign.challenge}
+          integrityMode={campaign.integrityMode}
           onSubmit={handleSubmit}
           submitting={submitting}
         />

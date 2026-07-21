@@ -14,8 +14,11 @@ async function request(path, options = {}) {
 
 export const api = {
   getSkills: () => request('/skills'),
+  getQuestionBank: () => request('/question-bank'),
   createCampaign: (payload) =>
     request('/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
+  createCustomCampaign: (payload) =>
+    request('/campaigns/custom', { method: 'POST', body: JSON.stringify(payload) }),
   getCampaign: (id) => request(`/campaigns/${id}`),
   getResults: (id) => request(`/campaigns/${id}/results`),
   startAttempt: (campaignId, payload) =>
@@ -29,9 +32,14 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),
-  submitAttempt: (attemptId, answer) =>
+  submitAttempt: (attemptId, answer, integrity) =>
     request(`/attempts/${attemptId}/submit`, {
       method: 'POST',
-      body: JSON.stringify({ answer }),
+      body: JSON.stringify({ answer, integrity }),
+    }),
+  gradeQuestion: (attemptId, questionId, score, notes) =>
+    request(`/attempts/${attemptId}/grade`, {
+      method: 'POST',
+      body: JSON.stringify({ questionId, score, notes }),
     }),
 };
