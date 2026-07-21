@@ -1,34 +1,50 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../api.js';
 
 export default function Home() {
+  const [skills, setSkills] = useState(null);
+
+  useEffect(() => {
+    api.getSkills().then((res) => setSkills(res.skills)).catch(() => setSkills([]));
+  }, []);
+
+  const grouped = groupByCategory(skills);
+
   return (
     <div>
       <h1>Contrata por lo que la gente sabe hacer, no por lo que escribe en un PDF.</h1>
       <p className="lede">
         El CV se puede inflar con IA en cinco minutos. En vez de leer perfiles, envía
-        a cada candidato un reto real de 15 minutos en su celular. La plataforma
+        a cada candidato un reto real de 15 minutos en su celular — desde marketing
+        (paid media, SEO, content, CRM, automation) hasta tecnología. La plataforma
         califica automáticamente y tú ves un ranking, no una pila de currículums.
       </p>
 
-      <div className="grid-3">
-        <div className="card">
-          <h2>💻 Programador/a</h2>
-          <p className="muted">Arregla un código roto. Se corre contra pruebas ocultas y se califica solo.</p>
+      {Object.entries(grouped).map(([categoryLabel, options]) => (
+        <div key={categoryLabel} style={{ marginBottom: 16 }}>
+          <p className="muted" style={{ margin: '0 0 8px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            {categoryLabel}
+          </p>
+          <div className="grid-3">
+            {options.map((skill) => (
+              <div className="card" key={skill.id}>
+                <h2 style={{ fontSize: '1.05rem' }}>
+                  {skill.icon} {skill.label}
+                </h2>
+                <p className="muted" style={{ marginBottom: 0 }}>
+                  {skill.description}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="card">
-          <h2>🎧 Atención al cliente</h2>
-          <p className="muted">Responde a un cliente furioso simulado. Se mide empatía, resolución y tono.</p>
-        </div>
-        <div className="card">
-          <h2>📊 Contabilidad</h2>
-          <p className="muted">Encuentra el error en un balance general y corrige la cifra.</p>
-        </div>
-      </div>
+      ))}
 
       <div className="card">
         <h2>¿Cómo funciona?</h2>
         <ol className="muted">
-          <li>Creas un reto para un puesto (elige rol: developer, soporte o contabilidad).</li>
+          <li>Creas un reto para una posición y eliges el skill a evaluar del catálogo.</li>
           <li>Compartes el enlace con tus candidatos — lo abren en el celular, sin registro previo.</li>
           <li>Cada quien tiene 15 minutos. La calificación es automática y objetiva.</li>
           <li>Tú ves el ranking en tiempo real y entrevistas solo a quien ya demostró que sabe.</li>
@@ -39,4 +55,12 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+function groupByCategory(skills) {
+  if (!skills) return {};
+  return skills.reduce((acc, skill) => {
+    (acc[skill.categoryLabel] = acc[skill.categoryLabel] || []).push(skill);
+    return acc;
+  }, {});
 }

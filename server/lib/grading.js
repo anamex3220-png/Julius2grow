@@ -1,9 +1,4 @@
 import vm from 'node:vm';
-import {
-  EMPATHY_WORDS,
-  RESOLUTION_WORDS,
-  NEGATIVE_WORDS,
-} from './challenges.js';
 
 const RUN_TIMEOUT_MS = 1000;
 
@@ -11,7 +6,7 @@ const RUN_TIMEOUT_MS = 1000;
 // require/process/fs) y corre cada caso de prueba con timeout. No es un
 // aislamiento a prueba de balas para producción (usar isolated-vm o un
 // worker con seccomp para eso), pero basta para evaluar snippets cortos.
-export function gradeDeveloperChallenge(candidateCode, secret) {
+export function gradeCodeChallenge(candidateCode, secret) {
   const { functionName, tests } = secret;
   const results = tests.map((test) => {
     try {
@@ -45,7 +40,7 @@ export function gradeDeveloperChallenge(candidateCode, secret) {
   };
 }
 
-export function gradeAccountingChallenge(answer, secret) {
+export function gradeDiagnosisChallenge(answer, secret) {
   const lineCorrect = answer.lineId === secret.correctLineId;
   const valueCorrect = Number(answer.correctedValue) === secret.correctValue;
   let score = 0;
@@ -65,43 +60,51 @@ export function gradeAccountingChallenge(answer, secret) {
   };
 }
 
-function countMatches(text, words) {
-  const lower = text.toLowerCase();
-  return words.filter((w) => lower.includes(w)).length;
-}
-
-export function gradeSupportTranscript(transcript) {
+// Rúbrica genérica: cada "dimensión" suma puntos cuando el texto del
+// candidato contiene alguna de sus palabras clave; `negativeWords` y los
+// mensajes demasiado cortos/largos restan puntos. Así una misma función
+// califica cualquier escenario (soporte, copy, etc.) con solo cambiar la
+// configuración en server/lib/skills.js — no hay lógica por skill aquí.
+export function gradeScenarioChallenge(transcript, secret) {
+  const rubric = secret.rubric;
   const candidateMessages = transcript
     .filter((m) => m.speaker === 'candidate')
     .map((m) => m.text);
 
   if (candidateMessages.length === 0) {
-    return { score: 0, passed: false, detail: { empathy: 0, resolution: 0, professionalism: 0 } };
+    return {
+      score: 0,
+      passed: false,
+      detail: { dimensions: rubric.dimensions.map((d) => ({ key: d.key, label: d.label, score: 0 })) },
+    };
   }
 
-  const fullText = candidateMessages.join(' ');
-  const empathyHits = countMatches(fullText, EMPATHY_WORDS);
-  const resolutionHits = countMatches(fullText, RESOLUTION_WORDS);
-  const negativeHits = countMatches(fullText, NEGATIVE_WORDS);
-  const tooShort = candidateMessages.some((m) => m.trim().split(/\s+/).length < 4);
+  const fullText = candidateMessages.join(' ').toLowerCase();
 
-  const empathyScore = Math.min(100, empathyHits * 50);
-  const resolutionScore = Math.min(100, resolutionHits * 50);
-  let professionalismScore = 100 - negativeHits * 40 - (tooShort ? 20 : 0);
-  professionalismScore = Math.max(0, professionalismScore);
+  const dimensionScores = rubric.dimensions.map((dim) => {
+    const hits = dim.words.filter((w) => fullText.includes(w)).length;
+    const score = Math.min(100, hits * (dim.hitValue || 50));
+    return { key: dim.key, label: dim.label, score, weight: dim.weight };
+  });
+  const weightedScore = dimensionScores.reduce((sum, d) => sum + d.score * d.weight, 0);
 
-  const score = Math.round(
-    empathyScore * 0.35 + resolutionScore * 0.4 + professionalismScore * 0.25
+  const negativeHits = (rubric.negativeWords || []).filter((w) => fullText.includes(w)).length;
+  const tooShort = candidateMessages.some(
+    (m) => m.trim().split(/\s+/).length < (rubric.minWordsPerMessage || 1)
   );
+  const tooLong = rubric.maxCharsPerMessage
+    ? candidateMessages.some((m) => m.length > rubric.maxCharsPerMessage)
+    : false;
+
+  let penalty = negativeHits * (rubric.negativePenalty || 0);
+  if (tooShort) penalty += rubric.shortMessagePenalty || 0;
+  if (tooLong) penalty += rubric.lengthPenalty || 0;
+
+  const score = Math.max(0, Math.min(100, Math.round(weightedScore - penalty)));
 
   return {
     score,
-    passed: score >= 60,
-    detail: {
-      empathy: empathyScore,
-      resolution: resolutionScore,
-      professionalism: professionalismScore,
-      negativeHits,
-    },
+    passed: score >= (rubric.passThreshold ?? 60),
+    detail: { dimensions: dimensionScores, negativeHits, tooShort, tooLong },
   };
 }

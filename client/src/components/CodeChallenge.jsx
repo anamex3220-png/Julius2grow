@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function DeveloperChallenge({ challenge, onSubmit, submitting }) {
+export default function CodeChallenge({ challenge, onSubmit, submitting }) {
   const [code, setCode] = useState(challenge.starterCode);
 
   return (

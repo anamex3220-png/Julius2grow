@@ -42,7 +42,7 @@ export default function Results() {
     <div>
       <h1>{campaign.title}</h1>
       <p className="lede">
-        {campaign.roleLabel} {campaign.company ? `· ${campaign.company}` : ''}
+        {campaign.categoryLabel} · {campaign.skillLabel} {campaign.company ? `· ${campaign.company}` : ''}
       </p>
 
       <div className="card">

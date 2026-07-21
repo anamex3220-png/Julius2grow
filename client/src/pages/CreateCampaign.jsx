@@ -1,15 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 
-const ROLE_OPTIONS = [
-  { id: 'developer', label: '💻 Programador/a', desc: 'Arreglar un código roto contra pruebas ocultas.' },
-  { id: 'support', label: '🎧 Atención al cliente', desc: 'Calmar y resolver el caso de un cliente furioso simulado.' },
-  { id: 'accounting', label: '📊 Contabilidad', desc: 'Detectar el error en un balance general.' },
-];
-
 export default function CreateCampaign() {
-  const [role, setRole] = useState('developer');
+  const [skills, setSkills] = useState(null);
+  const [skillId, setSkillId] = useState('');
   const [title, setTitle] = useState('');
   const [company, setCompany] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,12 +12,22 @@ export default function CreateCampaign() {
   const [created, setCreated] = useState(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    api
+      .getSkills()
+      .then((res) => {
+        setSkills(res.skills);
+        if (res.skills.length > 0) setSkillId(res.skills[0].id);
+      })
+      .catch((err) => setError(err.message));
+  }, []);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const campaign = await api.createCampaign({ role, title, company });
+      const campaign = await api.createCampaign({ skillId, title, company });
       setCreated(campaign);
     } catch (err) {
       setError(err.message);
@@ -55,27 +60,42 @@ export default function CreateCampaign() {
     );
   }
 
+  const grouped = groupByCategory(skills);
+
   return (
     <div>
       <h1>Crea un reto de 15 minutos</h1>
       <p className="lede">Elige qué habilidad quieres evaluar. Nosotros generamos el reto y el enlace.</p>
 
       <form onSubmit={handleSubmit}>
-        <label>Rol a evaluar</label>
-        <div className="grid-3" style={{ marginBottom: 16 }}>
-          {ROLE_OPTIONS.map((opt) => (
-            <div
-              key={opt.id}
-              className={`card role-card ${role === opt.id ? 'selected' : ''}`}
-              onClick={() => setRole(opt.id)}
-            >
-              <strong>{opt.label}</strong>
-              <p className="muted" style={{ marginBottom: 0 }}>
-                {opt.desc}
+        <label>Skill a evaluar</label>
+        {!skills ? (
+          <p className="muted">Cargando catálogo de skills...</p>
+        ) : (
+          Object.entries(grouped).map(([categoryLabel, options]) => (
+            <div key={categoryLabel} style={{ marginBottom: 16 }}>
+              <p className="muted" style={{ margin: '0 0 8px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                {categoryLabel}
               </p>
+              <div className="grid-3">
+                {options.map((opt) => (
+                  <div
+                    key={opt.id}
+                    className={`card role-card ${skillId === opt.id ? 'selected' : ''}`}
+                    onClick={() => setSkillId(opt.id)}
+                  >
+                    <strong>
+                      {opt.icon} {opt.label}
+                    </strong>
+                    <p className="muted" style={{ marginBottom: 0 }}>
+                      {opt.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
 
         <label htmlFor="title">Título del puesto</label>
         <input
@@ -98,10 +118,18 @@ export default function CreateCampaign() {
 
         {error && <p className="error-text">{error}</p>}
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading || !skillId}>
           {loading ? 'Creando...' : 'Generar reto y enlace'}
         </button>
       </form>
     </div>
   );
+}
+
+function groupByCategory(skills) {
+  if (!skills) return {};
+  return skills.reduce((acc, skill) => {
+    (acc[skill.categoryLabel] = acc[skill.categoryLabel] || []).push(skill);
+    return acc;
+  }, {});
 }

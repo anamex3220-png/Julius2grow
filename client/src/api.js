@@ -13,6 +13,7 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  getSkills: () => request('/skills'),
   createCampaign: (payload) =>
     request('/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
   getCampaign: (id) => request(`/campaigns/${id}`),
@@ -23,8 +24,8 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getAttempt: (id) => request(`/attempts/${id}`),
-  sendSupportReply: (attemptId, message) =>
-    request(`/attempts/${attemptId}/support/reply`, {
+  sendScenarioReply: (attemptId, message) =>
+    request(`/attempts/${attemptId}/scenario/reply`, {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),

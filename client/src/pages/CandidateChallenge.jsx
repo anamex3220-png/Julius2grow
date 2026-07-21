@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import Timer from '../components/Timer.jsx';
-import DeveloperChallenge from '../components/DeveloperChallenge.jsx';
-import SupportChallenge from '../components/SupportChallenge.jsx';
-import AccountingChallenge from '../components/AccountingChallenge.jsx';
+import CodeChallenge from '../components/CodeChallenge.jsx';
+import ScenarioChallenge from '../components/ScenarioChallenge.jsx';
+import DiagnosisChallenge from '../components/DiagnosisChallenge.jsx';
 
 export default function CandidateChallenge() {
   const { campaignId, attemptId } = useParams();
@@ -75,14 +75,14 @@ export default function CandidateChallenge() {
   return (
     <div>
       <Timer startedAt={attempt.startedAt} timeLimitSeconds={attempt.timeLimitSeconds} onExpire={handleExpire} />
-      {campaign.role === 'developer' && (
-        <DeveloperChallenge challenge={campaign.challenge} onSubmit={handleSubmit} submitting={submitting} />
+      {campaign.challenge.type === 'code' && (
+        <CodeChallenge challenge={campaign.challenge} onSubmit={handleSubmit} submitting={submitting} />
       )}
-      {campaign.role === 'accounting' && (
-        <AccountingChallenge challenge={campaign.challenge} onSubmit={handleSubmit} submitting={submitting} />
+      {campaign.challenge.type === 'diagnosis' && (
+        <DiagnosisChallenge challenge={campaign.challenge} onSubmit={handleSubmit} submitting={submitting} />
       )}
-      {campaign.role === 'support' && (
-        <SupportChallenge
+      {campaign.challenge.type === 'scenario' && (
+        <ScenarioChallenge
           attemptId={attemptId}
           challenge={campaign.challenge}
           onSubmit={handleSubmit}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { formatDiagnosisValue } from '../format.js';
 
 export default function AttemptDetail() {
   const { campaignId, attemptId } = useParams();
@@ -27,7 +28,7 @@ export default function AttemptDetail() {
       </Link>
       <h1 style={{ marginTop: 12 }}>{attempt.candidateName}</h1>
       <p className="lede">
-        {attempt.candidateEmail} · {campaign.roleLabel} · {attempt.status}
+        {attempt.candidateEmail} · {campaign.skillLabel} · {attempt.status}
       </p>
 
       <div className="score-row">
@@ -45,14 +46,14 @@ export default function AttemptDetail() {
         </div>
       </div>
 
-      {attempt.role === 'developer' && <DeveloperDetail attempt={attempt} />}
-      {attempt.role === 'accounting' && <AccountingDetail attempt={attempt} campaign={campaign} />}
-      {attempt.role === 'support' && <SupportDetail attempt={attempt} />}
+      {attempt.challengeType === 'code' && <CodeDetail attempt={attempt} />}
+      {attempt.challengeType === 'diagnosis' && <DiagnosisDetail attempt={attempt} campaign={campaign} />}
+      {attempt.challengeType === 'scenario' && <ScenarioDetail attempt={attempt} />}
     </div>
   );
 }
 
-function DeveloperDetail({ attempt }) {
+function CodeDetail({ attempt }) {
   const detail = attempt.detail || {};
   return (
     <div className="card">
@@ -87,12 +88,14 @@ function DeveloperDetail({ attempt }) {
   );
 }
 
-function AccountingDetail({ attempt, campaign }) {
+function DiagnosisDetail({ attempt, campaign }) {
   const detail = attempt.detail || {};
   const lineItems = campaign.challenge.lineItems || [];
+  const correctItem = lineItems.find((item) => item.id === detail.correctLineId);
+
   return (
     <div className="card">
-      <h2>Balance evaluado</h2>
+      <h2>Datos evaluados</h2>
       <table className="balance-table">
         <tbody>
           {lineItems.map((item) => (
@@ -101,7 +104,7 @@ function AccountingDetail({ attempt, campaign }) {
                 {item.label}
                 {item.id === detail.correctLineId && <span className="badge fail" style={{ marginLeft: 8 }}>Línea con error</span>}
               </td>
-              <td className="num">${item.value.toLocaleString()}</td>
+              <td className="num">{formatDiagnosisValue(item)}</td>
             </tr>
           ))}
         </tbody>
@@ -115,30 +118,25 @@ function AccountingDetail({ attempt, campaign }) {
       </p>
       <p>
         Valor corregido propuesto: <strong>{detail.submittedValue ?? '—'}</strong>{' '}
-        (correcto: {detail.correctValue?.toLocaleString()})
+        (correcto: {correctItem ? formatDiagnosisValue({ ...correctItem, value: detail.correctValue }) : detail.correctValue})
       </p>
     </div>
   );
 }
 
-function SupportDetail({ attempt }) {
+function ScenarioDetail({ attempt }) {
   const detail = attempt.detail || {};
+  const dimensions = detail.dimensions || [];
   return (
     <div className="card">
       <h2>Desglose de la conversación</h2>
       <div className="score-row">
-        <div className="score-tile">
-          <div className="value">{detail.empathy ?? '—'}</div>
-          <div className="label">Empatía</div>
-        </div>
-        <div className="score-tile">
-          <div className="value">{detail.resolution ?? '—'}</div>
-          <div className="label">Resolución</div>
-        </div>
-        <div className="score-tile">
-          <div className="value">{detail.professionalism ?? '—'}</div>
-          <div className="label">Profesionalismo</div>
-        </div>
+        {dimensions.map((dim) => (
+          <div className="score-tile" key={dim.key}>
+            <div className="value">{dim.score}</div>
+            <div className="label">{dim.label}</div>
+          </div>
+        ))}
       </div>
       <h2 style={{ marginTop: 20 }}>Transcripción</h2>
       <div className="chat">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api.js';
 
-export default function SupportChallenge({ attemptId, challenge, onSubmit, submitting }) {
+export default function ScenarioChallenge({ attemptId, challenge, onSubmit, submitting }) {
   const [transcript, setTranscript] = useState([{ speaker: 'customer', text: challenge.opening }]);
   const [message, setMessage] = useState('');
   const [done, setDone] = useState(false);
@@ -13,7 +13,7 @@ export default function SupportChallenge({ attemptId, challenge, onSubmit, submi
     setSending(true);
     setError('');
     try {
-      const res = await api.sendSupportReply(attemptId, message.trim());
+      const res = await api.sendScenarioReply(attemptId, message.trim());
       setTranscript(res.transcript);
       setMessage('');
       if (res.done) setDone(true);

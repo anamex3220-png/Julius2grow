@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
+import { formatDiagnosisValue } from '../format.js';
 
-export default function AccountingChallenge({ challenge, onSubmit, submitting }) {
+export default function DiagnosisChallenge({ challenge, onSubmit, submitting }) {
   const [lineId, setLineId] = useState('');
   const [correctedValue, setCorrectedValue] = useState('');
 
@@ -23,7 +24,7 @@ export default function AccountingChallenge({ challenge, onSubmit, submitting })
               {items.map((item) => (
                 <tr key={item.id} className={item.isTotal ? 'total' : ''}>
                   <td>{item.label}</td>
-                  <td className="num">${item.value.toLocaleString()}</td>
+                  <td className="num">{formatDiagnosisValue(item)}</td>
                 </tr>
               ))}
             </Fragment>
@@ -45,9 +46,10 @@ export default function AccountingChallenge({ challenge, onSubmit, submitting })
       <input
         id="correctedValue"
         type="number"
+        step="any"
         value={correctedValue}
         onChange={(e) => setCorrectedValue(e.target.value)}
-        placeholder="Ej. 120000"
+        placeholder={challenge.correctionHint || 'Ej. 120000'}
       />
 
       <button

@@ -36,7 +36,7 @@ export default function CandidateStart() {
       <h1>{campaign.title}</h1>
       <p className="lede">
         {campaign.company ? `${campaign.company} · ` : ''}
-        {campaign.roleLabel}
+        {campaign.skillLabel}
       </p>
 
       <div className="card">

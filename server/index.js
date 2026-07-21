@@ -2,11 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import { nanoid } from 'nanoid';
 import { db } from './lib/db.js';
-import { ROLES, nextSupportCustomerMessage } from './lib/challenges.js';
+import { SKILLS, CATEGORY_LABELS, nextScenarioMessage } from './lib/skills.js';
 import {
-  gradeDeveloperChallenge,
-  gradeAccountingChallenge,
-  gradeSupportTranscript,
+  gradeCodeChallenge,
+  gradeDiagnosisChallenge,
+  gradeScenarioChallenge,
 } from './lib/grading.js';
 
 const app = express();
@@ -16,15 +16,18 @@ app.use(express.json());
 const PORT = process.env.PORT || 4000;
 
 function publicCampaign(campaign) {
+  const skill = SKILLS[campaign.skillId];
   return {
     id: campaign.id,
-    role: campaign.role,
-    roleLabel: ROLES[campaign.role].label,
+    skillId: campaign.skillId,
+    skillLabel: skill.label,
+    category: skill.category,
+    categoryLabel: CATEGORY_LABELS[skill.category],
     title: campaign.title,
     company: campaign.company,
     createdAt: campaign.createdAt,
     timeLimitSeconds: campaign.timeLimitSeconds,
-    challenge: campaign.challenge.public,
+    challenge: { type: skill.type, ...campaign.challenge.public },
   };
 }
 
@@ -33,26 +36,40 @@ function publicAttempt(attempt) {
   return rest;
 }
 
+// --- Catálogo de skills ---
+
+app.get('/api/skills', (req, res) => {
+  const skills = Object.values(SKILLS).map((s) => ({
+    id: s.id,
+    label: s.label,
+    icon: s.icon,
+    description: s.description,
+    category: s.category,
+    categoryLabel: CATEGORY_LABELS[s.category],
+  }));
+  res.json({ skills, categories: CATEGORY_LABELS });
+});
+
 // --- Campañas (reclutador) ---
 
 app.post('/api/campaigns', (req, res) => {
-  const { role, title, company } = req.body || {};
-  if (!ROLES[role]) {
-    return res.status(400).json({ error: 'Rol inválido. Usa developer, support o accounting.' });
+  const { skillId, title, company } = req.body || {};
+  const skill = SKILLS[skillId];
+  if (!skill) {
+    return res.status(400).json({ error: 'Skill inválido.' });
   }
   if (!title || !title.trim()) {
     return res.status(400).json({ error: 'El título del puesto es obligatorio.' });
   }
 
-  const roleDef = ROLES[role];
   const campaign = {
     id: nanoid(10),
-    role,
+    skillId,
     title: title.trim(),
     company: (company || '').trim(),
     createdAt: new Date().toISOString(),
-    timeLimitSeconds: roleDef.timeLimitSeconds,
-    challenge: roleDef.build(),
+    timeLimitSeconds: skill.timeLimitSeconds,
+    challenge: skill.build(),
   };
   db.addCampaign(campaign);
   res.status(201).json(publicCampaign(campaign));
@@ -79,6 +96,7 @@ app.get('/api/campaigns/:id/results', (req, res) => {
 app.post('/api/campaigns/:id/attempts', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
+  const skill = SKILLS[campaign.skillId];
 
   const { candidateName, candidateEmail } = req.body || {};
   if (!candidateName || !candidateName.trim()) {
@@ -88,7 +106,8 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
   const attempt = {
     id: nanoid(10),
     campaignId: campaign.id,
-    role: campaign.role,
+    skillId: campaign.skillId,
+    challengeType: skill.type,
     candidateName: candidateName.trim(),
     candidateEmail: (candidateEmail || '').trim(),
     startedAt: new Date().toISOString(),
@@ -99,7 +118,8 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
     score: null,
     passed: null,
     detail: null,
-    transcript: campaign.role === 'support' ? [{ speaker: 'customer', text: campaign.challenge.secret.openingMessage }] : undefined,
+    transcript:
+      skill.type === 'scenario' ? [{ speaker: 'customer', text: campaign.challenge.secret.openingMessage }] : undefined,
     secretSnapshot: campaign.challenge.secret,
   };
   db.addAttempt(attempt);
@@ -112,10 +132,10 @@ app.get('/api/attempts/:id', (req, res) => {
   res.json(publicAttempt(attempt));
 });
 
-app.post('/api/attempts/:id/support/reply', (req, res) => {
+app.post('/api/attempts/:id/scenario/reply', (req, res) => {
   const attempt = db.getAttempt(req.params.id);
   if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
-  if (attempt.role !== 'support') return res.status(400).json({ error: 'Este intento no es de atención al cliente.' });
+  if (attempt.challengeType !== 'scenario') return res.status(400).json({ error: 'Este intento no es de tipo escenario.' });
   if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'Este intento ya fue enviado.' });
 
   const { message } = req.body || {};
@@ -127,13 +147,13 @@ app.post('/api/attempts/:id/support/reply', (req, res) => {
   const turnIndex = candidateTurns;
   attempt.transcript.push({ speaker: 'candidate', text: message.trim() });
 
-  const customerReply = nextSupportCustomerMessage(turnIndex, message.trim());
-  if (customerReply) {
-    attempt.transcript.push({ speaker: 'customer', text: customerReply });
+  const reply = nextScenarioMessage(attempt.secretSnapshot, turnIndex, message.trim());
+  if (reply) {
+    attempt.transcript.push({ speaker: 'customer', text: reply });
   }
 
   db.updateAttempt(attempt.id, { transcript: attempt.transcript });
-  res.json({ customerReply, done: !customerReply, transcript: attempt.transcript });
+  res.json({ customerReply: reply, done: !reply, transcript: attempt.transcript });
 });
 
 app.post('/api/attempts/:id/submit', (req, res) => {
@@ -153,15 +173,15 @@ app.post('/api/attempts/:id/submit', (req, res) => {
 
   if (timedOut) {
     gradeResult = { score: 0, passed: false, detail: { reason: 'tiempo agotado' } };
-  } else if (attempt.role === 'developer') {
+  } else if (attempt.challengeType === 'code') {
     const code = answer?.code || '';
-    gradeResult = gradeDeveloperChallenge(code, attempt.secretSnapshot);
-  } else if (attempt.role === 'accounting') {
-    gradeResult = gradeAccountingChallenge(answer || {}, attempt.secretSnapshot);
-  } else if (attempt.role === 'support') {
-    gradeResult = gradeSupportTranscript(attempt.transcript || []);
+    gradeResult = gradeCodeChallenge(code, attempt.secretSnapshot);
+  } else if (attempt.challengeType === 'diagnosis') {
+    gradeResult = gradeDiagnosisChallenge(answer || {}, attempt.secretSnapshot);
+  } else if (attempt.challengeType === 'scenario') {
+    gradeResult = gradeScenarioChallenge(attempt.transcript || [], attempt.secretSnapshot);
   } else {
-    return res.status(400).json({ error: 'Rol desconocido.' });
+    return res.status(400).json({ error: 'Tipo de reto desconocido.' });
   }
 
   const updated = db.updateAttempt(attempt.id, {
