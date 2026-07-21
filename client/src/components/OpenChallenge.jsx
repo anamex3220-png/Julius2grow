@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useIntegrity } from '../integrity.js';
 
 const CRITERION_LABEL = {
+  integral: 'Técnica + lógica + soft skill',
   logica: 'Lógica aplicada',
   conocimiento: 'Conocimiento aplicado',
   soft_skill: 'Soft skill',

@@ -7,6 +7,7 @@ export const CRITERIA = {
   logica: 'Lógica aplicada al puesto',
   conocimiento: 'Conocimiento aplicado',
   soft_skill: 'Soft skill',
+  integral: 'Técnica + lógica + soft skill',
 };
 
 const MAX_IMAGE_BASE64_LENGTH = 2_800_000; // ~2MB decoded

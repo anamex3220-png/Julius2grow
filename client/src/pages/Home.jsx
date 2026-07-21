@@ -16,8 +16,9 @@ export default function Home() {
       <h1>Contrata por lo que la gente sabe hacer, no por lo que escribe en un PDF.</h1>
       <p className="lede">
         El CV se puede inflar con IA en cinco minutos. En vez de leer perfiles, envía
-        a cada candidato un reto real de 15 minutos en su celular — desde marketing
-        (paid media, SEO, content, CRM, automation) hasta tecnología. La plataforma
+        a cada candidato un reto diseñado para resolverse rápido, con el objetivo de
+        evaluar al talento de manera técnica y más eficaz — desde marketing (paid
+        media, SEO, content, CRM, automation) hasta tecnología. La plataforma
         califica automáticamente y tú ves un ranking, no una pila de currículums.
       </p>
 
@@ -44,9 +45,9 @@ export default function Home() {
       <div className="card">
         <h2>¿Cómo funciona?</h2>
         <ol className="muted">
-          <li>Creas un reto para una posición y eliges el skill a evaluar del catálogo.</li>
+          <li>Creas un reto para una posición: del catálogo, o armando el tuyo desde cero.</li>
           <li>Compartes el enlace con tus candidatos — lo abren en el celular, sin registro previo.</li>
-          <li>Cada quien tiene 15 minutos. La calificación es automática y objetiva.</li>
+          <li>Cada reto está diseñado para resolverse rápido. La calificación es automática y objetiva.</li>
           <li>Tú ves el ranking en tiempo real y entrevistas solo a quien ya demostró que sabe.</li>
         </ol>
         <Link to="/crear">

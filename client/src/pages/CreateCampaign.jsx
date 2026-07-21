@@ -6,12 +6,13 @@ import ImageUploadField from '../components/ImageUploadField.jsx';
 import QuestionBankPicker from '../components/QuestionBankPicker.jsx';
 
 const CRITERION_OPTIONS = [
+  { id: 'integral', label: 'Técnica + lógica + soft skill (recomendado)' },
   { id: 'logica', label: 'Lógica aplicada al puesto' },
   { id: 'conocimiento', label: 'Conocimiento aplicado' },
   { id: 'soft_skill', label: 'Soft skill' },
 ];
 
-const EMPTY_QUESTION = { text: '', criterion: 'logica', keywords: '' };
+const EMPTY_QUESTION = { text: '', criterion: 'integral', keywords: '' };
 
 export default function CreateCampaign() {
   const [mode, setMode] = useState('catalog'); // 'catalog' | 'custom'

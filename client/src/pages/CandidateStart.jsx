@@ -43,7 +43,8 @@ export default function CandidateStart() {
         <h2>{campaign.challenge.title}</h2>
         <p className="muted">{campaign.challenge.prompt}</p>
         <p>
-          ⏱ Tienes <strong>{Math.round(campaign.timeLimitSeconds / 60)} minutos</strong> desde que empieces.
+          ⏱ Este reto está diseñado para resolverse rápido: tienes{' '}
+          <strong>{Math.round(campaign.timeLimitSeconds / 60)} minutos</strong> desde que empieces.
           No hay segunda oportunidad, así que prepárate antes de dar clic en "Empezar".
         </p>
       </div>

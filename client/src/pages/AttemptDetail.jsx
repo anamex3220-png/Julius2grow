@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { formatDiagnosisValue } from '../format.js';
 
 const CRITERION_LABEL = {
+  integral: 'Técnica + lógica + soft skill',
   logica: 'Lógica aplicada',
   conocimiento: 'Conocimiento aplicado',
   soft_skill: 'Soft skill',

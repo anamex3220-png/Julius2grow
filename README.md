@@ -1,8 +1,9 @@
-# Anti-Currículum
+# Anti-AI-Retos
 
-Plataforma de reclutamiento basada en retos de 15 minutos en vez de CVs. En
-lugar de leer perfiles inflados, el candidato resuelve un reto real en su
-celular y la plataforma lo califica automáticamente.
+Plataforma de reclutamiento basada en retos diseñados para resolverse rápido,
+en vez de CVs. En lugar de leer perfiles inflados, el candidato resuelve en
+su celular un reto pensado para evaluarlo de forma técnica y más eficaz, y la
+plataforma lo califica automáticamente.
 
 ## Catálogo de skills
 
@@ -70,17 +71,24 @@ que quieren armar su propio reto — sin código:
   guarda como data URI en el JSON — sin cuenta de almacenamiento externo;
   cap de ~2MB) y/o una tabla de datos editable (agregar columnas y filas
   desde la UI).
-- **Preguntas abiertas y elaboradas** (no opción múltiple), cada una
-  etiquetada con el criterio que mide: **lógica aplicada al puesto**,
-  **conocimiento aplicado**, o **soft skill**. Cada pregunta puede traer
-  palabras clave esperadas (autocalifica) o quedar en blanco (el reclutador
-  la lee y la califica manualmente desde el detalle del intento, con nota
-  opcional — ver `POST /api/attempts/:id/grade`).
+- **Preguntas abiertas y elaboradas** (no opción múltiple), etiquetadas con
+  el criterio que miden. El default recomendado es **integral** — técnica de
+  la especialización + lógica + soft skill evaluadas en una sola pregunta
+  situacional — pero también existen las 3 etiquetas de v2 (lógica,
+  conocimiento, soft skill) por si prefieres una pregunta enfocada en un solo
+  criterio. Cada pregunta puede traer palabras clave esperadas (autocalifica)
+  o quedar en blanco (el reclutador la lee y la califica manualmente desde el
+  detalle del intento, con nota opcional — ver `POST /api/attempts/:id/grade`).
 - **Banco de preguntas** (`server/lib/questionBank.js`, expuesto en
-  `GET /api/question-bank`): 15 preguntas situacionales ya escritas (3
-  criterios × 5 áreas de marketing — Paid Media, SEO, Content, CRM,
-  Automation) que se insertan con un clic desde el constructor y se pueden
-  editar libremente.
+  `GET /api/question-bank`): máximo 5 preguntas por área (25 en total —
+  Paid Media, SEO, Content, CRM, Automation), todas de criterio integral y
+  sin rúbrica de palabras clave a propósito — son preguntas de juicio
+  situacional pensadas para responderse a conciencia, y calificarlas por
+  coincidencia de palabras las trivializaría. El enunciado de cada una
+  presenta hechos y una tensión (presupuesto, tiempo, un stakeholder pidiendo
+  algo) sin adelantar el diagnóstico o la decisión correcta — eso es lo que
+  se evalúa. Se insertan con un clic desde el constructor y se pueden editar
+  libremente.
 
 ## Anti-IA
 

@@ -11,7 +11,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/" className="brand">
-          Anti-Currículum
+          Anti-AI-Retos
         </Link>
         <nav>
           <Link to="/crear">Crear reto</Link>
