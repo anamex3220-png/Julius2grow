@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { nanoid } from 'nanoid';
 import { db } from './lib/db.js';
 import { SKILLS, CATEGORY_LABELS, nextScenarioMessage } from './lib/skills.js';
@@ -8,6 +11,9 @@ import {
   gradeDiagnosisChallenge,
   gradeScenarioChallenge,
 } from './lib/grading.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CLIENT_DIST = path.join(__dirname, '..', 'client', 'dist');
 
 const app = express();
 app.use(cors());
@@ -198,6 +204,17 @@ app.post('/api/attempts/:id/submit', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// Sirve el cliente ya compilado (client/dist) cuando existe, para que un
+// solo proceso/servicio cubra API + frontend en producción. En desarrollo
+// (npm run dev) client/dist no existe y Vite sirve el frontend aparte.
+if (existsSync(CLIENT_DIST)) {
+  app.use(express.static(CLIENT_DIST));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`API de retos escuchando en http://localhost:${PORT}`);
