@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum LeaveType {
+  VACACIONES
+  DIAS_PERSONALES
+  INCAPACIDAD
+}
+
+enum LeaveStatus {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  CANCELADA
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  passwordHash        String
+  name                String
+  role                Role     @default(EMPLOYEE)
+  hireDate            DateTime
+  residesOutsideMexico Boolean @default(false)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  managerId String?
+  manager   User?   @relation("ManagerToReports", fields: [managerId], references: [id])
+  reports   User[]  @relation("ManagerToReports")
+
+  leaveRequests       LeaveRequest[] @relation("RequestsByUser")
+  approvedRequests     LeaveRequest[] @relation("RequestsApprovedBy")
+  adjustments          LeaveAdjustment[] @relation("AdjustmentsForUser")
+  adjustmentsCreated   LeaveAdjustment[] @relation("AdjustmentsCreatedBy")
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation("RequestsByUser", fields: [userId], references: [id])
+  type         LeaveType
+  startDate    DateTime
+  endDate      DateTime
+  businessDays Int
+  note         String?
+  status       LeaveStatus @default(PENDIENTE)
+
+  approverId  String?
+  approver    User?     @relation("RequestsApprovedBy", fields: [approverId], references: [id])
+  approvedAt  DateTime?
+  decisionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model LeaveAdjustment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("AdjustmentsForUser", fields: [userId], references: [id])
+  type        LeaveType
+  days        Int
+  reason      String
+  createdById String
+  createdBy   User      @relation("AdjustmentsCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Holiday {
+  id   String   @id @default(cuid())
+  date DateTime @unique
+  name String
+}
