@@ -102,15 +102,22 @@ npm test
 
 ## Despliegue (recomendado: Render.com)
 
+Este repo incluye un `render.yaml` (Render Blueprint) que crea la base de
+datos y el Web Service automáticamente: en el dashboard de Render, "New" →
+"Blueprint" → selecciona este repo. Render pedirá confirmar el plan y
+generará `JWT_SECRET` por ti.
+
+Si prefieres configurarlo a mano:
+
 1. Crea una base de datos **PostgreSQL** administrada en Render.
 2. Crea un **Web Service** apuntando a este repo, con:
-   - Build command: `npm install && npm run build --prefix server && npm install --prefix client && npm run build --prefix client`
+   - Build command: `npm install --prefix server && npx prisma generate --schema=server/prisma/schema.prisma && npm run build --prefix server && npm install --prefix client && npm run build --prefix client`
    - Start command: `npm start --prefix server`
    - Variables de entorno: `DATABASE_URL` (la de Render), `JWT_SECRET`
      (genera uno largo y aleatorio), `NODE_ENV=production`.
 3. Corre las migraciones contra la base de producción antes del primer
-   arranque: `npx prisma migrate deploy` (desde `server`, con el
-   `DATABASE_URL` de producción).
+   arranque: `npx prisma migrate deploy --schema=server/prisma/schema.prisma`
+   (con el `DATABASE_URL` de producción).
 4. Corre `npm run prisma:seed` una sola vez si quieres partir con las cuentas
    de ejemplo (recomendado solo reemplazar por datos reales de Julius antes
    de usarlo en producción).
