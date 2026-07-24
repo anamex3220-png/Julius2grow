@@ -111,8 +111,8 @@ Si prefieres configurarlo a mano:
 
 1. Crea una base de datos **PostgreSQL** administrada en Render.
 2. Crea un **Web Service** apuntando a este repo, con:
-   - Build command: `npm install --prefix server && npx prisma generate --schema=server/prisma/schema.prisma && npm run build --prefix server && npm install --prefix client && npm run build --prefix client`
-   - Start command: `npm start --prefix server`
+   - Build command: `cd server && npm install && npx prisma generate && npm run build && cd ../client && npm install && npm run build`
+   - Start command: `cd server && npm start`
    - Variables de entorno: `DATABASE_URL` (la de Render), `JWT_SECRET`
      (genera uno largo y aleatorio), `NODE_ENV=production`.
 3. Corre las migraciones contra la base de producción antes del primer
