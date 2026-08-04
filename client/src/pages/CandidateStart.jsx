@@ -50,6 +50,19 @@ export default function CandidateStart() {
         </p>
       </div>
 
+      <div className="card" style={{ borderColor: 'var(--warn)' }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700 }}>⚠️ Important Notice: Honest &amp; Independent Assessment</p>
+        <p className="muted" style={{ fontSize: '0.88rem', margin: '0 0 8px' }}>
+          To ensure a fair process and accurately evaluate your real skills, please complete this exercise
+          independently. Our system includes detection mechanisms to identify the use of artificial
+          intelligence or other external resources.
+        </p>
+        <p className="muted" style={{ fontSize: '0.88rem', margin: 0 }}>
+          Using these tools compromises the integrity of the test and will automatically invalidate your
+          application. Show us your real talent!
+        </p>
+      </div>
+
       <div className="card">
         <h2 style={{ fontSize: '1rem' }}>Aviso de privacidad</h2>
         <p className="muted" style={{ fontSize: '0.88rem' }}>

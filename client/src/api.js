@@ -19,7 +19,11 @@ export const api = {
     request('/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
   createCustomCampaign: (payload) =>
     request('/campaigns/custom', { method: 'POST', body: JSON.stringify(payload) }),
+  getCampaigns: () => request('/campaigns'),
   getCampaign: (id) => request(`/campaigns/${id}`),
+  getCampaignForEdit: (id) => request(`/campaigns/${id}/edit`),
+  updateCampaign: (id, payload) => request(`/campaigns/${id}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  deleteCampaign: (id) => request(`/campaigns/${id}`, { method: 'DELETE' }),
   getResults: (id) => request(`/campaigns/${id}/results`),
   startAttempt: (campaignId, payload) =>
     request(`/campaigns/${campaignId}/attempts`, {

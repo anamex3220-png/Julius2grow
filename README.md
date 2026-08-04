@@ -1,4 +1,4 @@
-# Anti-AI-Retos
+# Retos - Julius
 
 Plataforma de reclutamiento basada en retos diseñados para resolverse rápido,
 en vez de CVs. En lugar de leer perfiles inflados, el candidato resuelve en
@@ -89,6 +89,41 @@ que quieren armar su propio reto — sin código:
   algo) sin adelantar el diagnóstico o la decisión correcta — eso es lo que
   se evalúa. Se insertan con un clic desde el constructor y se pueden editar
   libremente.
+
+## Aviso anti-IA en cada reto
+
+Todo candidato ve, antes de empezar, un aviso fijo (en inglés, tal como lo
+pidió el equipo) advirtiendo que el sistema detecta el uso de IA u otros
+recursos externos y que eso invalida la aplicación — independiente del
+`integrityMode` que tenga esa campaña. Vive hardcodeado en
+`CandidateStart.jsx`; es un elemento disuasorio, no una prueba técnica en sí
+(la prueba técnica son las señales descritas abajo).
+
+## Panel de administración ("Mis retos")
+
+En `/mis-retos` hay una lista de todas las campañas creadas, con cuántos
+candidatos ha respondido cada una. Desde ahí:
+
+- **Ver resultados** — va al ranking de esa campaña (ya existía).
+- **Editar** — para retos del catálogo, solo se edita metadata (título,
+  empresa, correo de contacto, modo anti-IA); el contenido del reto viene
+  del skill y no se toca ahí. Para retos personalizados (`open`), se edita
+  todo con el mismo formulario del constructor (`CustomChallengeForm.jsx`,
+  compartido entre crear y editar), precargado incluyendo las palabras
+  clave de cada pregunta — esas viven en `secret` y nunca se le mandan al
+  candidato, pero sí al reclutador vía `GET /api/campaigns/:id/edit`.
+- **Eliminar** — borra la campaña completa y, en cascada, todos sus
+  intentos (`DELETE /api/campaigns/:id`). Distinto del borrado de un
+  intento individual que ya existía en el detalle de cada candidato.
+
+**Importante sobre el `GET /api/campaigns/:id/edit`**: como no hay
+autenticación (ver más abajo), cualquiera que adivine o consiga ese URL
+puede ver las palabras clave de calificación de un reto personalizado. Es
+el mismo nivel de exposición que ya tenía `/resultados/:id` — no es una
+regresión, pero si vas a usar esto con retos de verdad, la falta de auth es
+el pendiente más urgente de la lista de abajo, y ahora también cubre poder
+listar y borrar campañas ajenas si alguien más comparte esta misma
+instancia.
 
 ## Anti-IA
 
@@ -194,23 +229,28 @@ server/   API en Express (Node, ESM)
   lib/db.js              persistencia en un JSON plano (server/data/db.json)
 
 client/   SPA en React + Vite + react-router
+  public/logo-julius.png      logo de marca (topbar + favicon)
   src/format.js               formateo de valores para retos tipo "diagnosis"
   src/integrity.js            hook de señales anti-IA (paste/tab-switch/
                                keystroke/fullscreen)
-  src/pages/                  páginas (crear reto —con el constructor—,
-                               resultados, detalle, flujo candidato)
+  src/pages/                  páginas: crear reto (constructor), Mis retos
+                               (lista), editar reto, resultados, detalle,
+                               flujo candidato
   src/components/             CodeChallenge / DiagnosisChallenge /
                                ScenarioChallenge / OpenChallenge (uno por
                                `type`, genéricos — no por skill) + Timer +
-                               TableEditor / ImageUploadField /
-                               QuestionBankPicker (constructor)
+                               CustomChallengeForm (constructor, compartido
+                               entre crear y editar) + TableEditor /
+                               ImageUploadField / QuestionBankPicker
 ```
 
 No hay base de datos externa ni autenticación — es un MVP para validar el
 concepto. Antes de producción hace falta, como mínimo:
 
 - **Auth para reclutadores**: hoy cualquiera con el enlace `/resultados/:id`
-  ve los resultados. Falta login y ownership de campañas.
+  ve los resultados, y `/mis-retos` lista, edita y borra **todas** las
+  campañas sin distinguir quién las creó — no hay ownership. Es el gap más
+  importante antes de compartir esta instancia con más de una persona.
 - **Sandbox más fuerte para los retos tipo `code`**: `node:vm` con timeout
   basta para un demo, pero para producción conviene `isolated-vm`, un
   worker con seccomp, o un servicio tipo Judge0.

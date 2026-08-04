@@ -48,6 +48,25 @@ function publicAttempt(attempt) {
   return rest;
 }
 
+// Igual que publicCampaign, pero para la pantalla de edición del reclutador:
+// en retos "open" también manda las palabras clave de cada pregunta (viven
+// en `secret`, nunca se exponen al candidato) para que se puedan editar sin
+// perderlas.
+function editableCampaign(campaign) {
+  const base = publicCampaign(campaign);
+  if (campaign.challengeType === 'open') {
+    const secretQuestions = campaign.challenge.secret.questions || [];
+    base.challenge = {
+      ...base.challenge,
+      questions: base.challenge.questions.map((q) => {
+        const secret = secretQuestions.find((sq) => sq.id === q.id);
+        return { ...q, keywords: secret?.rubric ? secret.rubric.words.join(', ') : '' };
+      }),
+    };
+  }
+  return base;
+}
+
 // --- Catálogo de skills y banco de preguntas ---
 
 app.get('/api/skills', (req, res) => {
@@ -118,10 +137,62 @@ app.post('/api/campaigns/custom', (req, res) => {
   }
 });
 
+app.get('/api/campaigns', (req, res) => {
+  const campaigns = db
+    .getCampaigns()
+    .slice()
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map((c) => ({ ...publicCampaign(c), attemptCount: db.getAttemptsForCampaign(c.id).length }));
+  res.json({ campaigns });
+});
+
 app.get('/api/campaigns/:id', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
   res.json(publicCampaign(campaign));
+});
+
+app.get('/api/campaigns/:id/edit', (req, res) => {
+  const campaign = db.getCampaign(req.params.id);
+  if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
+  res.json(editableCampaign(campaign));
+});
+
+app.patch('/api/campaigns/:id', (req, res) => {
+  const campaign = db.getCampaign(req.params.id);
+  if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
+
+  const { title, company, contactEmail, integrityMode, challenge } = req.body || {};
+  const patch = {};
+
+  if (title !== undefined) {
+    if (!title.trim()) return res.status(400).json({ error: 'El título del puesto es obligatorio.' });
+    patch.title = title.trim();
+  }
+  if (company !== undefined) patch.company = (company || '').trim();
+  if (contactEmail !== undefined) patch.contactEmail = (contactEmail || '').trim();
+  if (integrityMode !== undefined) patch.integrityMode = integrityMode === 'strict' ? 'strict' : 'signals';
+
+  if (campaign.challengeType === 'open' && challenge) {
+    try {
+      const built = buildCustomChallenge({ ...req.body, title: patch.title ?? campaign.title });
+      patch.timeLimitSeconds = built.timeLimitSeconds;
+      patch.integrityMode = built.integrityMode;
+      patch.challenge = built.challenge;
+    } catch (err) {
+      if (err instanceof ValidationError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  }
+
+  const updated = db.updateCampaign(campaign.id, patch);
+  res.json(publicCampaign(updated));
+});
+
+app.delete('/api/campaigns/:id', (req, res) => {
+  const deleted = db.deleteCampaign(req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'Campaña no encontrada.' });
+  res.json({ ok: true });
 });
 
 app.get('/api/campaigns/:id/results', (req, res) => {

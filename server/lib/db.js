@@ -33,6 +33,21 @@ export const db = {
     save(state);
     return campaign;
   },
+  updateCampaign: (id, patch) => {
+    const campaign = state.campaigns.find((c) => c.id === id);
+    if (!campaign) return null;
+    Object.assign(campaign, patch);
+    save(state);
+    return campaign;
+  },
+  deleteCampaign: (id) => {
+    const index = state.campaigns.findIndex((c) => c.id === id);
+    if (index === -1) return false;
+    state.campaigns.splice(index, 1);
+    state.attempts = state.attempts.filter((a) => a.campaignId !== id);
+    save(state);
+    return true;
+  },
   getAttempt: (id) => state.attempts.find((a) => a.id === id),
   getAttemptsForCampaign: (campaignId) =>
     state.attempts.filter((a) => a.campaignId === campaignId),

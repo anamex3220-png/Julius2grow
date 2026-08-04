@@ -43,10 +43,27 @@ body {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--text);
   text-decoration: none;
+}
+
+.brand-logo {
+  height: 26px;
+  width: auto;
+  display: block;
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 20px;
 }
 
 .topbar nav a {
