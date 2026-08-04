@@ -99,6 +99,37 @@ recursos externos y que eso invalida la aplicación — independiente del
 `CandidateStart.jsx`; es un elemento disuasorio, no una prueba técnica en sí
 (la prueba técnica son las señales descritas abajo).
 
+## Login
+
+Hay una sola contraseña compartida para todo el equipo de reclutamiento —
+no son cuentas individuales, y por lo tanto no hay "quién creó qué campaña"
+(cualquiera logueado ve y administra todas). Protege `/crear`, `/mis-retos`,
+`/mis-retos/:id/editar`, `/resultados/:id` y `/resultados/:id/intentos/:id`
+tanto en el cliente (`RequireAuth.jsx` redirige a `/login` si no hay sesión)
+como en el servidor (`requireAuth` en `server/lib/auth.js` rechaza con 401
+las rutas de creación/edición/borrado/resultados sin un token válido).
+
+El candidato **nunca ve el login** — su flujo entero (`/c/:campaignId` y
+todo lo que cuelga de ahí) sigue siendo público a propósito, porque solo
+tiene el link que le compartes.
+
+- La contraseña vive en la variable de entorno `ADMIN_PASSWORD` — nunca en
+  el código ni en git. Si no está configurada, el servidor arranca con una
+  contraseña de desarrollo insegura y lo avisa en los logs; hay que ponerla
+  de verdad antes de usar esto con candidatos reales.
+- Las sesiones son tokens random guardados en memoria del servidor
+  (`server/lib/auth.js`), no en el disco persistente — un redeploy o
+  reinicio del servicio cierra la sesión de todo el equipo y hay que volver
+  a entrar. Es una limitación aceptada a cambio de simplicidad; si se vuelve
+  molesto, el siguiente paso natural es guardar las sesiones en el mismo
+  almacenamiento persistente que ya existe para campañas e intentos.
+
+### Configurar la contraseña en Render
+
+1. Entra a tu servicio en Render → **Environment**.
+2. Agrega la variable `ADMIN_PASSWORD` con la contraseña que quieras usar.
+3. Guarda — Render reinicia el servicio con la contraseña nueva activa.
+
 ## Panel de administración ("Mis retos")
 
 En `/mis-retos` hay una lista de todas las campañas creadas, con cuántos
@@ -116,14 +147,8 @@ candidatos ha respondido cada una. Desde ahí:
   intentos (`DELETE /api/campaigns/:id`). Distinto del borrado de un
   intento individual que ya existía en el detalle de cada candidato.
 
-**Importante sobre el `GET /api/campaigns/:id/edit`**: como no hay
-autenticación (ver más abajo), cualquiera que adivine o consiga ese URL
-puede ver las palabras clave de calificación de un reto personalizado. Es
-el mismo nivel de exposición que ya tenía `/resultados/:id` — no es una
-regresión, pero si vas a usar esto con retos de verdad, la falta de auth es
-el pendiente más urgente de la lista de abajo, y ahora también cubre poder
-listar y borrar campañas ajenas si alguien más comparte esta misma
-instancia.
+Todas las rutas de este panel están detrás del login — ver la sección
+"Login" arriba.
 
 ## Anti-IA
 
@@ -217,6 +242,8 @@ Monorepo con dos workspaces npm:
 ```
 server/   API en Express (Node, ESM)
   index.js               rutas HTTP
+  lib/auth.js             login de una sola contraseña compartida +
+                         sesiones en memoria (`requireAuth` middleware)
   lib/skills.js          catálogo de skills — contenido de cada reto (lo
                          público que ve el candidato + la clave de
                          calificación, que nunca se envía al cliente)
@@ -230,12 +257,14 @@ server/   API en Express (Node, ESM)
 
 client/   SPA en React + Vite + react-router
   public/logo-julius.png      logo de marca (topbar + favicon)
+  src/auth.jsx                 AuthProvider/useAuth (token en localStorage)
+  src/RequireAuth.jsx          guarda de ruta — redirige a /login sin sesión
   src/format.js               formateo de valores para retos tipo "diagnosis"
   src/integrity.js            hook de señales anti-IA (paste/tab-switch/
                                keystroke/fullscreen)
-  src/pages/                  páginas: crear reto (constructor), Mis retos
-                               (lista), editar reto, resultados, detalle,
-                               flujo candidato
+  src/pages/                  páginas: login, crear reto (constructor),
+                               Mis retos (lista), editar reto, resultados,
+                               detalle, flujo candidato
   src/components/             CodeChallenge / DiagnosisChallenge /
                                ScenarioChallenge / OpenChallenge (uno por
                                `type`, genéricos — no por skill) + Timer +
@@ -244,13 +273,14 @@ client/   SPA en React + Vite + react-router
                                ImageUploadField / QuestionBankPicker
 ```
 
-No hay base de datos externa ni autenticación — es un MVP para validar el
-concepto. Antes de producción hace falta, como mínimo:
+No hay base de datos externa ni cuentas individuales — es un MVP para
+validar el concepto. Antes de producción hace falta, como mínimo:
 
-- **Auth para reclutadores**: hoy cualquiera con el enlace `/resultados/:id`
-  ve los resultados, y `/mis-retos` lista, edita y borra **todas** las
-  campañas sin distinguir quién las creó — no hay ownership. Es el gap más
-  importante antes de compartir esta instancia con más de una persona.
+- **Ownership por reclutador**: el login es una sola contraseña compartida,
+  así que cualquiera del equipo ve y administra las campañas de todos —
+  no hay noción de "mis campañas" vs. "las de alguien más". Si el equipo
+  crece o se necesita separar accesos, el siguiente paso es login
+  individual con ownership por campaña.
 - **Sandbox más fuerte para los retos tipo `code`**: `node:vm` con timeout
   basta para un demo, pero para producción conviene `isolated-vm`, un
   worker con seccomp, o un servicio tipo Judge0.
@@ -270,9 +300,12 @@ Requiere Node 18+.
 
 ```bash
 npm install
-npm run dev
+ADMIN_PASSWORD=lo-que-quieras npm run dev
 ```
 
 Esto levanta la API en `http://localhost:4000` y el cliente en
 `http://localhost:5173` (con proxy de `/api` hacia el servidor). Abre
-`http://localhost:5173` para crear tu primer reto.
+`http://localhost:5173` — el catálogo y el flujo de candidato son públicos;
+para crear o administrar retos, entra a `/login` con la contraseña que
+pusiste en `ADMIN_PASSWORD` (si no la pones, usa una de desarrollo insegura
+y lo avisa en la consola).

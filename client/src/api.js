@@ -1,18 +1,25 @@
 const BASE = '/api';
 
 async function request(path, options = {}) {
+  const token = localStorage.getItem('authToken');
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 401) localStorage.removeItem('authToken');
     throw new Error(data.error || `Error ${res.status}`);
   }
   return data;
 }
 
 export const api = {
+  login: (password) => request('/login', { method: 'POST', body: JSON.stringify({ password }) }),
+  logout: () => request('/logout', { method: 'POST' }),
   getSkills: () => request('/skills'),
   getQuestionBank: () => request('/question-bank'),
   createCampaign: (payload) =>

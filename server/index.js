@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { nanoid } from 'nanoid';
 import { db } from './lib/db.js';
+import { checkPassword, createSession, destroySession, requireAuth } from './lib/auth.js';
 import { SKILLS, CATEGORY_LABELS, nextScenarioMessage } from './lib/skills.js';
 import { buildCustomChallenge, ValidationError, CRITERIA } from './lib/customChallenge.js';
 import { QUESTION_BANK, AREA_LABELS } from './lib/questionBank.js';
@@ -67,6 +68,22 @@ function editableCampaign(campaign) {
   return base;
 }
 
+// --- Login (equipo de reclutamiento) ---
+
+app.post('/api/login', (req, res) => {
+  const { password } = req.body || {};
+  if (!checkPassword(password)) {
+    return res.status(401).json({ error: 'Contraseña incorrecta.' });
+  }
+  res.json({ token: createSession() });
+});
+
+app.post('/api/logout', requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7);
+  destroySession(token);
+  res.json({ ok: true });
+});
+
 // --- Catálogo de skills y banco de preguntas ---
 
 app.get('/api/skills', (req, res) => {
@@ -87,7 +104,7 @@ app.get('/api/question-bank', (req, res) => {
 
 // --- Campañas (reclutador) ---
 
-app.post('/api/campaigns', (req, res) => {
+app.post('/api/campaigns', requireAuth, (req, res) => {
   const { skillId, title, company, contactEmail } = req.body || {};
   const skill = SKILLS[skillId];
   if (!skill) {
@@ -113,7 +130,7 @@ app.post('/api/campaigns', (req, res) => {
   res.status(201).json(publicCampaign(campaign));
 });
 
-app.post('/api/campaigns/custom', (req, res) => {
+app.post('/api/campaigns/custom', requireAuth, (req, res) => {
   try {
     const built = buildCustomChallenge(req.body);
     const campaign = {
@@ -137,7 +154,7 @@ app.post('/api/campaigns/custom', (req, res) => {
   }
 });
 
-app.get('/api/campaigns', (req, res) => {
+app.get('/api/campaigns', requireAuth, (req, res) => {
   const campaigns = db
     .getCampaigns()
     .slice()
@@ -152,13 +169,13 @@ app.get('/api/campaigns/:id', (req, res) => {
   res.json(publicCampaign(campaign));
 });
 
-app.get('/api/campaigns/:id/edit', (req, res) => {
+app.get('/api/campaigns/:id/edit', requireAuth, (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
   res.json(editableCampaign(campaign));
 });
 
-app.patch('/api/campaigns/:id', (req, res) => {
+app.patch('/api/campaigns/:id', requireAuth, (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
 
@@ -189,13 +206,13 @@ app.patch('/api/campaigns/:id', (req, res) => {
   res.json(publicCampaign(updated));
 });
 
-app.delete('/api/campaigns/:id', (req, res) => {
+app.delete('/api/campaigns/:id', requireAuth, (req, res) => {
   const deleted = db.deleteCampaign(req.params.id);
   if (!deleted) return res.status(404).json({ error: 'Campaña no encontrada.' });
   res.json({ ok: true });
 });
 
-app.get('/api/campaigns/:id/results', (req, res) => {
+app.get('/api/campaigns/:id/results', requireAuth, (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
   const attempts = db
@@ -323,7 +340,7 @@ app.post('/api/attempts/:id/submit', (req, res) => {
 
 // Calificación manual de preguntas abiertas sin rúbrica de palabras clave
 // (o para ajustar/anular la calificación automática de las que sí traen).
-app.post('/api/attempts/:id/grade', (req, res) => {
+app.post('/api/attempts/:id/grade', requireAuth, (req, res) => {
   const attempt = db.getAttempt(req.params.id);
   if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
   if (attempt.challengeType !== 'open') {
@@ -358,7 +375,7 @@ app.post('/api/attempts/:id/grade', (req, res) => {
 // Borrado manual de un intento, por ejemplo cuando un candidato pide que se
 // elimine su información. No hay borrado automático por tiempo — es una
 // acción explícita del reclutador.
-app.delete('/api/attempts/:id', (req, res) => {
+app.delete('/api/attempts/:id', requireAuth, (req, res) => {
   const deleted = db.deleteAttempt(req.params.id);
   if (!deleted) return res.status(404).json({ error: 'Intento no encontrado.' });
   res.json({ ok: true });
