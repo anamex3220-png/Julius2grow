@@ -6,24 +6,37 @@ su celular un reto pensado para evaluarlo de forma técnica y más eficaz, y la
 plataforma lo califica automáticamente. El candidato nunca ve su puntaje ni
 la sección de administración — eso es solo para quien inicia sesión.
 
+**Idioma**: todo lo que hay en el link del candidato (`/c/:campaignId` y lo
+que cuelga de ahí — textos de la UI, los 8 retos del catálogo, el banco de
+preguntas situacionales) está en **inglés**. Todo lo demás — pantallas de
+login, "Mis retos", crear/editar reto, resultados, detalle de intento — está
+en **español**. Ver "Catálogo de skills" y "Anti-IA" abajo para el detalle
+técnico de cómo se mantiene esa separación sin romper la calificación
+automática.
+
 ## Catálogo de skills
 
 El picker de "qué skill evaluar" no está hardcodeado en el cliente: sale de
 `GET /api/skills`, que lee el catálogo en `server/lib/skills.js`. Hoy trae 8
 posiciones (marketing + tecnología), pero agregar una nueva es agregar una
 entrada al catálogo — el cliente y el motor de calificación no conocen
-"paid_media" ni "developer" por nombre, solo el `type` del reto.
+"paid_media" ni "developer" por nombre, solo el `type` del reto. Cada skill
+tiene dos etiquetas: `label` (español, para el picker del reclutador y
+"Mis retos"/"Resultados") y `candidateLabel` (inglés, lo único que ve el
+candidato en `CandidateStart.jsx`) — el resto del contenido del reto
+(`build()`: título, prompt, tablas, mensajes de chat) está directamente en
+inglés, porque es lo que termina en el link del candidato.
 
-| Categoría | Skill | Tipo | Reto |
+| Categoría | Skill (admin) / candidateLabel | Tipo | Reto |
 |---|---|---|---|
-| Marketing | 📈 Paid Media | `diagnosis` | El ROAS de una campaña no coincide con ingresos ÷ gasto. Encontrarla y corregirla. |
-| Marketing | 🔍 SEO | `diagnosis` | Una fila de tracking de keywords tiene el cambio de posición mal calculado. |
-| Marketing | ✍️ Content | `scenario` | Reescribir un anuncio sin gancho ni llamado a la acción, en un solo turno. |
-| Marketing | 📇 CRM | `code` | Arreglar una regla de segmentación de clientes VIP con un bug de lógica (`\|\|` en vez de `&&`). |
-| Marketing | ⚙️ Automation | `code` | Arreglar el trigger de un correo de carrito abandonado que dispara en casos que no debería. |
-| Tecnología | 💻 Programador/a | `code` | Arreglar una función de JS con bugs (`calcularTotalCarrito`). |
-| Tecnología | 🎧 Atención al cliente | `scenario` | Responder a un cliente furioso simulado (2 turnos). |
-| Tecnología | 📊 Contabilidad | `diagnosis` | Encontrar la línea de un balance general que no coincide con sus componentes. |
+| Marketing | Paid Media | `diagnosis` | ROAS doesn't match revenue ÷ spend for one campaign. Find it and fix it. |
+| Marketing | SEO | `diagnosis` | One row in a keyword tracking table has the position change miscalculated. |
+| Marketing | Content | `scenario` | Rewrite an ad with no hook or call to action, in a single turn. |
+| Marketing | CRM | `code` | Fix a VIP customer segmentation rule with a logic bug (`\|\|` instead of `&&`). |
+| Marketing | Automation | `code` | Fix an abandoned-cart email trigger that fires in cases it shouldn't. |
+| Tecnología | Developer | `code` | Fix a JS function with bugs (`calculateCartTotal`). |
+| Tecnología | Customer Support | `scenario` | Reply to a simulated angry customer (2 turns). |
+| Tecnología | Accounting | `diagnosis` | Find the line in a balance sheet that doesn't match its components. |
 
 Tres motores de calificación genéricos cubren cualquier posición nueva:
 
@@ -89,7 +102,13 @@ que quieren armar su propio reto — sin código:
   presenta hechos y una tensión (presupuesto, tiempo, un stakeholder pidiendo
   algo) sin adelantar el diagnóstico o la decisión correcta — eso es lo que
   se evalúa. Se insertan con un clic desde el constructor y se pueden editar
-  libremente.
+  libremente. El texto de cada pregunta está en inglés (si el reclutador la
+  inserta tal cual, termina en el link del candidato); el resto del
+  constructor — la UI del picker, las etiquetas de criterio — es en español
+  porque es una pantalla solo para el reclutador. Si el reclutador escribe
+  su propio contexto/preguntas desde cero en vez de usar el banco, ese texto
+  queda en el idioma en que lo escriba — es contenido suyo, la herramienta no
+  lo traduce automáticamente.
 
 ## Aviso anti-IA en cada reto
 
@@ -211,7 +230,9 @@ para manejar eso con cuidado:
 
 - **Aviso + consentimiento**: antes de empezar, el candidato ve qué se
   guarda y para qué, con una casilla obligatoria para aceptar
-  (`CandidateStart.jsx`). El servidor rechaza crear el intento si no llega
+  (`CandidateStart.jsx`). El aviso de privacidad va justo debajo de los
+  campos de nombre/correo y antes de la casilla, así queda pegado a lo que
+  está aceptando. El servidor rechaza crear el intento si no llega
   `consent: true`, y guarda `consentAcceptedAt` en el intento como registro.
 - **Correo de contacto por campaña**: al crear un reto (catálogo o
   personalizado) puedes poner un correo de contacto opcional; si lo pones,

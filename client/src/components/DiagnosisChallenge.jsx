@@ -32,9 +32,9 @@ export default function DiagnosisChallenge({ challenge, onSubmit, submitting }) 
         </tbody>
       </table>
 
-      <label htmlFor="lineId">¿Qué línea tiene el error?</label>
+      <label htmlFor="lineId">Which line has the error?</label>
       <select id="lineId" value={lineId} onChange={(e) => setLineId(e.target.value)}>
-        <option value="">Selecciona una línea</option>
+        <option value="">Select a line</option>
         {challenge.lineItems.map((item) => (
           <option key={item.id} value={item.id}>
             {item.group} · {item.label}
@@ -42,21 +42,21 @@ export default function DiagnosisChallenge({ challenge, onSubmit, submitting }) 
         ))}
       </select>
 
-      <label htmlFor="correctedValue">¿Cuál debería ser el valor correcto?</label>
+      <label htmlFor="correctedValue">What should the correct value be?</label>
       <input
         id="correctedValue"
         type="number"
         step="any"
         value={correctedValue}
         onChange={(e) => setCorrectedValue(e.target.value)}
-        placeholder={challenge.correctionHint || 'Ej. 120000'}
+        placeholder={challenge.correctionHint || 'E.g. 120000'}
       />
 
       <button
         onClick={() => onSubmit({ lineId, correctedValue })}
         disabled={submitting || !lineId || correctedValue === ''}
       >
-        {submitting ? 'Enviando...' : 'Enviar y calificar'}
+        {submitting ? 'Submitting...' : 'Submit for grading'}
       </button>
     </div>
   );

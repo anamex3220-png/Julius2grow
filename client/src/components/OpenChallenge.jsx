@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useIntegrity } from '../integrity.js';
 
 const CRITERION_LABEL = {
-  integral: 'Técnica + lógica + soft skill',
-  logica: 'Lógica aplicada',
-  conocimiento: 'Conocimiento aplicado',
+  integral: 'Technical + logic + soft skill',
+  logica: 'Applied logic',
+  conocimiento: 'Applied knowledge',
   soft_skill: 'Soft skill',
 };
 
@@ -34,14 +34,14 @@ export default function OpenChallenge({ challenge, integrityMode, onSubmit, subm
       {challenge.prompt && <p className="muted">{challenge.prompt}</p>}
       {strict && (
         <p className="muted" style={{ fontSize: '0.8rem' }}>
-          🔒 Modo estricto activo: no se puede pegar texto y se solicitó pantalla completa.
+          🔒 Strict mode active: pasting text is disabled and fullscreen was requested.
         </p>
       )}
 
       {challenge.image && (
         <img
           src={challenge.image.dataUrl}
-          alt={challenge.image.alt || 'Contexto del reto'}
+          alt={challenge.image.alt || 'Challenge context'}
           style={{ maxWidth: '100%', borderRadius: 8, margin: '12px 0', display: 'block' }}
         />
       )}
@@ -84,13 +84,13 @@ export default function OpenChallenge({ challenge, integrityMode, onSubmit, subm
             rows={5}
             value={answers[q.id] || ''}
             onChange={(e) => setAnswer(q.id, e.target.value)}
-            placeholder="Escribe tu respuesta..."
+            placeholder="Write your answer..."
           />
         </div>
       ))}
 
       <button onClick={handleSubmit} disabled={submitting || answeredCount === 0}>
-        {submitting ? 'Enviando...' : 'Enviar y calificar'}
+        {submitting ? 'Submitting...' : 'Submit for grading'}
       </button>
     </div>
   );

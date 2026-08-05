@@ -11,6 +11,10 @@
 // evaluando. `suggestedKeywords` se deja vacío a propósito: son respuestas
 // de juicio situacional, calificarlas por coincidencia de palabras las
 // trivializaría, así que quedan para que el reclutador las lea y califique.
+//
+// `text` está en inglés a propósito: si el reclutador inserta una de estas
+// preguntas en un reto personalizado, termina en el link que recibe el
+// candidato, y ese link debe estar 100% en inglés (ver skills.js).
 
 export const AREA_LABELS = {
   paid_media: 'Paid Media',
@@ -27,11 +31,11 @@ export const QUESTION_BANK = [
     area: 'paid_media',
     criterion: 'integral',
     text:
-      'Manejas $18,000 mensuales repartidos en 4 campañas de Meta Ads con resultados distintos entre sí. ' +
-      'Tu director comercial te pide, a media semana, mover todo el presupuesto a la campaña con mejor ' +
-      'desempeño histórico para "asegurar resultados" antes de fin de mes. Explica cómo evaluarías esa ' +
-      'petición, qué factores técnicos considerarías antes de decidir, y cómo le responderías a tu director ' +
-      'si tu análisis sugiere no hacer ese cambio.',
+      "You manage $18,000 a month across 4 Meta Ads campaigns with very different results from each " +
+      'other. Midweek, your commercial director asks you to move the entire budget to the campaign with ' +
+      'the best historical performance to "lock in results" before month end. Explain how you would ' +
+      "evaluate that request, what technical factors you'd consider before deciding, and how you would " +
+      "respond to your director if your analysis suggests not making that change.",
     suggestedKeywords: [],
   },
   {
@@ -39,10 +43,10 @@ export const QUESTION_BANK = [
     area: 'paid_media',
     criterion: 'integral',
     text:
-      'Una cuenta que manejas lleva 4 días con el costo por conversión duplicado, sin que hayas hecho ' +
-      'cambios en las campañas. El cliente te escribe pidiendo una explicación inmediata. Describe tu ' +
-      'proceso para investigar qué pudo causar el cambio, qué harías mientras tanto, y cómo estructurarías ' +
-      'tu respuesta al cliente sin tener aún una causa confirmada.',
+      "An account you manage has had double the cost per conversion for 4 days straight, without you " +
+      'having made any changes to the campaigns. The client emails asking for an immediate explanation. ' +
+      'Describe your process for investigating what could have caused the change, what you would do in ' +
+      'the meantime, and how you would structure your reply to the client without yet having a confirmed cause.',
     suggestedKeywords: [],
   },
   {
@@ -50,10 +54,10 @@ export const QUESTION_BANK = [
     area: 'paid_media',
     criterion: 'integral',
     text:
-      'Tienes un presupuesto fijo de $5,000 para lanzar un producto nuevo y debes decidir entre invertirlo ' +
-      'todo en un solo canal de alta intención de búsqueda, o repartirlo entre ese canal y uno de mayor ' +
-      'alcance pero menor intención inmediata. Argumenta cómo tomarías esta decisión, qué datos necesitarías ' +
-      'antes de decidir, y cómo se lo explicarías a alguien del equipo que no tiene experiencia en medios pagados.',
+      'You have a fixed budget of $5,000 to launch a new product and must decide between putting it all ' +
+      'into a single high-intent search channel, or splitting it between that channel and a wider-reach, ' +
+      'lower-immediate-intent one. Argue how you would make this decision, what data you would need before ' +
+      'deciding, and how you would explain it to someone on the team with no paid media experience.',
     suggestedKeywords: [],
   },
   {
@@ -61,10 +65,10 @@ export const QUESTION_BANK = [
     area: 'paid_media',
     criterion: 'integral',
     text:
-      'Una campaña de prospecting que venía funcionando bien empieza a perder eficiencia después de 3 ' +
-      'semanas corriendo con el mismo set de anuncios, justo cuando se acerca una fecha comercial importante ' +
-      'para el cliente. Explica qué revisarías técnicamente para entender qué está pasando, y cómo manejarías ' +
-      'la conversación con el cliente si la solución requiere más tiempo del que queda antes de la fecha clave.',
+      'A prospecting campaign that had been performing well starts losing efficiency after 3 weeks running ' +
+      'the same ad set, right as an important commercial date for the client approaches. Explain what ' +
+      "you'd review technically to understand what's happening, and how you would handle the conversation " +
+      'with the client if the fix needs more time than is left before the key date.',
     suggestedKeywords: [],
   },
   {
@@ -72,10 +76,10 @@ export const QUESTION_BANK = [
     area: 'paid_media',
     criterion: 'integral',
     text:
-      'El equipo de ventas insiste en que subas el presupuesto de una campaña porque genera muchos leads, ' +
-      'pero tus datos muestran que esos leads cierran muy por debajo del promedio de otras campañas. ' +
-      'Describe cómo analizarías la situación con datos, y cómo abordarías la conversación con el equipo de ' +
-      'ventas para llegar a una decisión conjunta.',
+      "The sales team insists you increase the budget of a campaign because it generates a lot of leads, " +
+      "but your data shows those leads close well below the average of other campaigns. Describe how " +
+      "you'd analyze the situation with data, and how you would approach the conversation with the sales " +
+      'team to reach a joint decision.',
     suggestedKeywords: [],
   },
 
@@ -85,10 +89,10 @@ export const QUESTION_BANK = [
     area: 'seo',
     criterion: 'integral',
     text:
-      'El tráfico orgánico de un sitio bajó 30% en tres semanas, sin cambios recientes en el contenido ni ' +
-      'penalizaciones visibles en las herramientas de monitoreo. El cliente, que no tiene conocimientos ' +
-      'técnicos, te pide una explicación urgente. Describe cómo estructurarías tu investigación paso a paso, ' +
-      'y cómo le explicarías la situación (sin tener aún la causa confirmada) de forma que entienda sin sentirse abrumado.',
+      "A site's organic traffic dropped 30% over three weeks, with no recent content changes and no " +
+      "visible penalties in the monitoring tools. The client, who isn't technical, asks you for an urgent " +
+      "explanation. Describe how you'd structure your investigation step by step, and how you would " +
+      'explain the situation (without yet having a confirmed cause) so they understand without feeling overwhelmed.',
     suggestedKeywords: [],
   },
   {
@@ -96,10 +100,10 @@ export const QUESTION_BANK = [
     area: 'seo',
     criterion: 'integral',
     text:
-      'Un cliente te pide que todas las páginas de categoría de su tienda en línea usen el mismo título y ' +
-      'la misma descripción, para mantener consistencia de marca en todo el sitio. Explica cómo evaluarías ' +
-      'esa petición desde el punto de vista técnico, qué le explicarías sobre las implicaciones de esa ' +
-      'decisión, y cómo plantearías una alternativa si consideras que no le conviene.',
+      "A client asks you to make every category page on their online store use the same title and " +
+      'description, to keep brand consistency across the whole site. Explain how you would evaluate that ' +
+      "request from a technical standpoint, what you'd explain about the implications of that decision, " +
+      "and how you'd propose an alternative if you think it doesn't serve them well.",
     suggestedKeywords: [],
   },
   {
@@ -107,10 +111,10 @@ export const QUESTION_BANK = [
     area: 'seo',
     criterion: 'integral',
     text:
-      'El equipo de producto planea rediseñar y migrar el sitio a una nueva plataforma en 3 semanas, sin ' +
-      'haber consultado al equipo de SEO. Te enteras apenas ahora. Describe qué revisarías de inmediato, ' +
-      'cómo priorizarías qué comunicar primero, y cómo abordarías la conversación con el equipo de producto ' +
-      'dado el poco tiempo que queda.',
+      'The product team is planning to redesign and migrate the site to a new platform in 3 weeks, without ' +
+      "having consulted the SEO team. You only find out now. Describe what you'd check right away, how " +
+      "you'd prioritize what to communicate first, and how you would approach the conversation with the " +
+      'product team given how little time is left.',
     suggestedKeywords: [],
   },
   {
@@ -118,10 +122,10 @@ export const QUESTION_BANK = [
     area: 'seo',
     criterion: 'integral',
     text:
-      'Tienes recursos para trabajar solo en una de estas dos cosas este mes: mejorar la velocidad de carga ' +
-      'del sitio (que afecta a todas las páginas) o crear contenido nuevo para varias palabras clave de alto ' +
-      'valor. Explica cómo decidirías cuál priorizar, qué datos usarías para sustentar tu decisión, y cómo ' +
-      'se lo explicarías a un cliente que quiere ambas cosas ya.',
+      'You have resources to work on only one of these two things this month: improving the site\'s ' +
+      "loading speed (which affects every page) or creating new content for several high-value keywords. " +
+      "Explain how you'd decide which to prioritize, what data you'd use to support your decision, and how " +
+      "you'd explain it to a client who wants both done now.",
     suggestedKeywords: [],
   },
   {
@@ -129,9 +133,10 @@ export const QUESTION_BANK = [
     area: 'seo',
     criterion: 'integral',
     text:
-      'Llevas 10 semanas de estrategia SEO con mejoras técnicas ya implementadas, pero el tráfico todavía ' +
-      'no refleja un cambio grande, y el cliente amenaza con cancelar el contrato este mes. Describe cómo ' +
-      'evaluarías si la estrategia va bien o necesita ajustes, y cómo manejarías esa conversación con el cliente.',
+      "You're 10 weeks into an SEO strategy with technical improvements already implemented, but traffic " +
+      "still doesn't reflect a big change, and the client is threatening to cancel the contract this month. " +
+      "Describe how you'd evaluate whether the strategy is on track or needs adjustments, and how you would " +
+      'handle that conversation with the client.',
     suggestedKeywords: [],
   },
 
@@ -141,10 +146,10 @@ export const QUESTION_BANK = [
     area: 'content',
     criterion: 'integral',
     text:
-      'Te entregan un brief de campaña con objetivos de negocio claros, pero sin ninguna guía sobre tono, ' +
-      'audiencia o formato, y la entrega es en 2 días. Describe cómo interpretarías el brief para definir ' +
-      'la estrategia de contenido, qué preguntas harías si tuvieras tiempo de una sola llamada corta, y cómo ' +
-      'tomarías decisiones donde no tengas toda la información.',
+      "You're handed a campaign brief with clear business goals, but no guidance at all on tone, audience, " +
+      "or format, and the deadline is in 2 days. Describe how you'd interpret the brief to define the " +
+      "content strategy, what questions you'd ask if you had time for a single short call, and how you'd " +
+      'make decisions where you lack full information.',
     suggestedKeywords: [],
   },
   {
@@ -152,9 +157,9 @@ export const QUESTION_BANK = [
     area: 'content',
     criterion: 'integral',
     text:
-      'Publicaste una pieza de contenido que generó buen alcance pero varios comentarios señalando que el ' +
-      'tono no encajaba con la marca. El cliente te escribe preocupado. Describe cómo evaluarías si el ' +
-      'problema es real o una reacción aislada, y cómo estructurarías tu respuesta al cliente.',
+      "You published a piece of content that got good reach but several comments pointing out the tone " +
+      "didn't fit the brand. The client emails you worried. Describe how you'd evaluate whether the issue " +
+      "is real or an isolated reaction, and how you would structure your reply to the client.",
     suggestedKeywords: [],
   },
   {
@@ -162,9 +167,10 @@ export const QUESTION_BANK = [
     area: 'content',
     criterion: 'integral',
     text:
-      'Necesitas adaptar el mismo mensaje central de una campaña para tres formatos muy distintos (un ' +
-      'artículo largo, un video corto y un carrusel de redes) con el mismo tiempo que antes usabas para uno ' +
-      'solo. Explica cómo priorizarías el esfuerzo entre los tres formatos y qué cambiarías del mensaje en cada uno.',
+      "You need to adapt the same core campaign message into three very different formats (a long article, " +
+      'a short video, and a social carousel) with the same amount of time you used to spend on just one. ' +
+      "Explain how you'd prioritize your effort across the three formats and what you'd change about the " +
+      'message in each.',
     suggestedKeywords: [],
   },
   {
@@ -172,10 +178,10 @@ export const QUESTION_BANK = [
     area: 'content',
     criterion: 'integral',
     text:
-      'Un diseñador rechaza cambios que hiciste a una pieza porque, según él, rompen la estética original, ' +
-      'pero tus datos de campañas anteriores muestran que ese tipo de cambios suele convertir mejor. Describe ' +
-      'cómo resolverías el desacuerdo con el diseñador, y qué harías si no llegan a un acuerdo antes de la ' +
-      'fecha de entrega.',
+      'A designer rejects changes you made to a piece because, in their view, they break the original ' +
+      'aesthetic, but your data from past campaigns shows that kind of change tends to convert better. ' +
+      "Describe how you'd resolve the disagreement with the designer, and what you'd do if you can't reach " +
+      'an agreement before the deadline.',
     suggestedKeywords: [],
   },
   {
@@ -183,9 +189,9 @@ export const QUESTION_BANK = [
     area: 'content',
     criterion: 'integral',
     text:
-      'Te piden escribir contenido educativo sobre un tema técnico de la industria del cliente que tú no ' +
-      'dominas a profundidad, con entrega en 3 días. Explica cómo abordarías la investigación y validación ' +
-      'del contenido para que sea preciso, sin tener tiempo de convertirte en experto en el tema.',
+      "You're asked to write educational content about a technical topic in the client's industry that you " +
+      "don't know deeply, due in 3 days. Explain how you'd approach researching and validating the content " +
+      "so it's accurate, without having time to become an expert on the topic.",
     suggestedKeywords: [],
   },
 
@@ -195,10 +201,10 @@ export const QUESTION_BANK = [
     area: 'crm',
     criterion: 'integral',
     text:
-      'Tienes 3 segmentos de clientes con comportamientos muy distintos, pero solo puedes lanzar una ' +
-      'campaña de reactivación este mes por restricciones de presupuesto y de tiempo del equipo. Describe ' +
-      'cómo decidirías a cuál segmento dirigirte, qué datos usarías para sustentar la decisión, y cómo le ' +
-      'explicarías esa priorización a alguien que esperaba que se atendieran los tres.',
+      'You have 3 customer segments with very different behaviors, but can only launch one reactivation ' +
+      "campaign this month due to budget and team time constraints. Describe how you'd decide which " +
+      "segment to target, what data you'd use to support the decision, and how you'd explain that " +
+      'prioritization to someone who expected all three to be addressed.',
     suggestedKeywords: [],
   },
   {
@@ -206,9 +212,9 @@ export const QUESTION_BANK = [
     area: 'crm',
     criterion: 'integral',
     text:
-      'La tasa de apertura de tu newsletter cayó de forma importante en el último mes, sin cambios evidentes ' +
-      'en el contenido ni en la frecuencia de envío. Describe tu proceso para investigar posibles causas y ' +
-      'cómo comunicarías el hallazgo — o la falta de uno todavía — al resto del equipo.',
+      "Your newsletter's open rate dropped significantly last month, with no obvious changes in content or " +
+      "send frequency. Describe your process for investigating possible causes, and how you'd communicate " +
+      'the finding — or the lack of one so far — to the rest of the team.',
     suggestedKeywords: [],
   },
   {
@@ -216,10 +222,10 @@ export const QUESTION_BANK = [
     area: 'crm',
     criterion: 'integral',
     text:
-      'El equipo de ventas te pide enviar una promoción a toda la base de clientes esta semana para cerrar ' +
-      'el mes con buenos números. Describe cómo evaluarías esa petición antes de ejecutarla, qué información ' +
-      'necesitarías del historial de la base, y cómo conversarías el tema con el equipo de ventas si tu ' +
-      'análisis apunta a hacerlo distinto a como lo piden.',
+      "The sales team asks you to send a promotion to the entire customer base this week to close out the " +
+      "month with good numbers. Describe how you'd evaluate that request before executing it, what " +
+      "information you'd need from the base's history, and how you'd discuss it with the sales team if your " +
+      'analysis points to doing it differently than requested.',
     suggestedKeywords: [],
   },
   {
@@ -227,9 +233,9 @@ export const QUESTION_BANK = [
     area: 'crm',
     criterion: 'integral',
     text:
-      'Vas a diseñar un nuevo flujo de fidelización para clientes recurrentes, pero tienes datos incompletos ' +
-      'sobre el historial de compras de una parte importante de la base. Describe cómo diseñarías el flujo ' +
-      'considerando esa limitación, y qué le comunicarías al equipo sobre los riesgos de lanzar así.',
+      "You're going to design a new loyalty flow for repeat customers, but you have incomplete purchase " +
+      "history data for a significant part of the base. Describe how you'd design the flow given that " +
+      "limitation, and what you'd communicate to the team about the risks of launching it that way.",
     suggestedKeywords: [],
   },
   {
@@ -237,9 +243,9 @@ export const QUESTION_BANK = [
     area: 'crm',
     criterion: 'integral',
     text:
-      'Un cliente importante se queja de que ha recibido demasiados correos en la última semana, aunque cada ' +
-      'uno vino de una automatización distinta y nadie se había dado cuenta del traslape. Describe cómo ' +
-      'investigarías qué pasó, cómo lo resolverías a nivel de sistema, y qué le dirías al cliente.',
+      'An important client complains about receiving too many emails in the last week, even though each ' +
+      "one came from a different automation and no one had noticed the overlap. Describe how you'd " +
+      "investigate what happened, how you'd fix it at a systems level, and what you'd tell the client.",
     suggestedKeywords: [],
   },
 
@@ -249,10 +255,10 @@ export const QUESTION_BANK = [
     area: 'automation',
     criterion: 'integral',
     text:
-      'Diseñaste un flujo de automatización para carritos abandonados, pero un mes después de lanzarlo ' +
-      'notas que la tasa de conversión es mucho más baja de lo esperado, sin haber cambiado nada del flujo. ' +
-      'Describe cómo investigarías las posibles causas, y cómo estructurarías la conversación con tu equipo ' +
-      'si el problema termina siendo un error en la configuración.',
+      'You designed an abandoned cart automation flow, but a month after launch you notice the conversion ' +
+      "rate is much lower than expected, without having changed anything in the flow. Describe how you'd " +
+      "investigate the possible causes, and how you'd structure the conversation with your team if the " +
+      'issue turns out to be a configuration error.',
     suggestedKeywords: [],
   },
   {
@@ -260,9 +266,9 @@ export const QUESTION_BANK = [
     area: 'automation',
     criterion: 'integral',
     text:
-      'El equipo de marketing quiere lanzar mañana una automatización nueva que aún no ha sido probada por ' +
-      'completo, para aprovechar una fecha comercial. Describe qué revisarías técnicamente antes del ' +
-      'lanzamiento, y cómo comunicarías tu recomendación sin sonar como que estás bloqueando el lanzamiento.',
+      'The marketing team wants to launch a new automation tomorrow that hasn\'t been fully tested yet, to ' +
+      "take advantage of a commercial date. Describe what you'd check technically before launch, and how " +
+      "you'd communicate your recommendation without sounding like you're blocking the launch.",
     suggestedKeywords: [],
   },
   {
@@ -270,10 +276,9 @@ export const QUESTION_BANK = [
     area: 'automation',
     criterion: 'integral',
     text:
-      'Tienes que diseñar un flujo de bienvenida para nuevos usuarios que se registran desde tres fuentes ' +
-      'distintas, cada una con expectativas distintas del usuario. Describe cómo estructurarías la lógica ' +
-      'del flujo para que se sienta relevante en los tres casos, y qué le explicarías al equipo sobre las ' +
-      'decisiones que tomaste.',
+      'You have to design a welcome flow for new users who sign up from three different sources, each with ' +
+      "different user expectations. Describe how you'd structure the flow's logic so it feels relevant in " +
+      "all three cases, and what you'd explain to the team about the decisions you made.",
     suggestedKeywords: [],
   },
   {
@@ -281,10 +286,10 @@ export const QUESTION_BANK = [
     area: 'automation',
     criterion: 'integral',
     text:
-      'Detectas que una automatización que lleva meses corriendo está enviando correos duplicados a un ' +
-      'pequeño porcentaje de usuarios, aunque nadie se había quejado todavía. Describe cómo priorizarías ' +
-      'investigar y corregir esto frente a otras tareas pendientes, y cómo decidirías si vale la pena ' +
-      'comunicarlo proactivamente a los usuarios afectados.',
+      'You discover that an automation that has been running for months is sending duplicate emails to a ' +
+      "small percentage of users, even though no one had complained yet. Describe how you'd prioritize " +
+      "investigating and fixing this against other pending tasks, and how you'd decide whether it's worth " +
+      'proactively communicating it to the affected users.',
     suggestedKeywords: [],
   },
   {
@@ -292,10 +297,10 @@ export const QUESTION_BANK = [
     area: 'automation',
     criterion: 'integral',
     text:
-      'Te piden integrar una nueva herramienta de automatización con el sistema de CRM actual, pero la ' +
-      'documentación técnica de la herramienta está incompleta y el proveedor tarda en responder tus dudas. ' +
-      'Describe cómo avanzarías con el proyecto bajo esa incertidumbre, y qué le comunicarías a tu equipo ' +
-      'sobre los riesgos y tiempos.',
+      "You're asked to integrate a new automation tool with the current CRM system, but the tool's " +
+      "technical documentation is incomplete and the vendor is slow to answer your questions. Describe how " +
+      "you'd move the project forward under that uncertainty, and what you'd communicate to your team about " +
+      'the risks and timeline.',
     suggestedKeywords: [],
   },
 ];

@@ -31,7 +31,11 @@ function publicCampaign(campaign) {
   return {
     id: campaign.id,
     skillId: campaign.skillId,
+    // skillLabel (español) es para las pantallas del reclutador; skillLabelEn
+    // es lo que ve el candidato en CandidateStart.jsx — su link debe quedar
+    // 100% en inglés.
     skillLabel: skill ? skill.label : campaign.customLabel || 'Reto personalizado',
+    skillLabelEn: skill ? skill.candidateLabel : 'Custom challenge',
     category: skill ? skill.category : 'custom',
     categoryLabel: skill ? CATEGORY_LABELS[skill.category] : 'Personalizado',
     title: campaign.title,
@@ -172,9 +176,12 @@ app.get('/api/campaigns', requireAuth, (req, res) => {
   res.json({ campaigns });
 });
 
+// Ruta pública — la usa tanto el candidato (CandidateStart.jsx) como el
+// reclutador (Results.jsx/AttemptDetail.jsx). El error queda en inglés
+// porque el caso más común es un candidato con un link roto o expirado.
 app.get('/api/campaigns/:id', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
-  if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
+  if (!campaign) return res.status(404).json({ error: 'Challenge not found.' });
   res.json(publicCampaign(campaign));
 });
 
@@ -235,14 +242,14 @@ app.get('/api/campaigns/:id/results', requireAuth, (req, res) => {
 
 app.post('/api/campaigns/:id/attempts', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
-  if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
+  if (!campaign) return res.status(404).json({ error: 'Challenge not found.' });
 
   const { candidateName, candidateEmail, consent, integrityMode } = req.body || {};
   if (!candidateName || !candidateName.trim()) {
-    return res.status(400).json({ error: 'El nombre es obligatorio.' });
+    return res.status(400).json({ error: 'Your name is required.' });
   }
   if (consent !== true) {
-    return res.status(400).json({ error: 'Debes aceptar el aviso de privacidad para empezar.' });
+    return res.status(400).json({ error: 'You must accept the privacy notice to start.' });
   }
 
   // El modo Anti-IA lo decide el link que usó el candidato (dos enlaces por
@@ -285,19 +292,21 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
 // optionalAuth decide cuánto devolver sin bloquear a nadie.
 app.get('/api/attempts/:id', optionalAuth, (req, res) => {
   const attempt = db.getAttempt(req.params.id);
-  if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
+  if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
   res.json(req.isRecruiter ? publicAttempt(attempt) : candidateAttempt(attempt));
 });
 
+// Solo la usa el candidato durante el reto (nunca el reclutador) — mensajes
+// en inglés.
 app.post('/api/attempts/:id/scenario/reply', (req, res) => {
   const attempt = db.getAttempt(req.params.id);
-  if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
-  if (attempt.challengeType !== 'scenario') return res.status(400).json({ error: 'Este intento no es de tipo escenario.' });
-  if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'Este intento ya fue enviado.' });
+  if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
+  if (attempt.challengeType !== 'scenario') return res.status(400).json({ error: 'This attempt is not a scenario challenge.' });
+  if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'This attempt was already submitted.' });
 
   const { message } = req.body || {};
   if (!message || !message.trim()) {
-    return res.status(400).json({ error: 'El mensaje no puede estar vacío.' });
+    return res.status(400).json({ error: 'The message cannot be empty.' });
   }
 
   const candidateTurns = attempt.transcript.filter((m) => m.speaker === 'candidate').length;
@@ -313,11 +322,12 @@ app.post('/api/attempts/:id/scenario/reply', (req, res) => {
   res.json({ customerReply: reply, done: !reply, transcript: attempt.transcript });
 });
 
+// Solo la usa el candidato al enviar su reto — mensajes en inglés.
 app.post('/api/attempts/:id/submit', (req, res) => {
   const attempt = db.getAttempt(req.params.id);
-  if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
+  if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
   if (attempt.status !== 'in_progress') {
-    return res.status(400).json({ error: 'Este intento ya fue enviado.' });
+    return res.status(400).json({ error: 'This attempt was already submitted.' });
   }
 
   const startedAt = new Date(attempt.startedAt).getTime();
@@ -329,7 +339,7 @@ app.post('/api/attempts/:id/submit', (req, res) => {
   const { answer, integrity } = req.body || {};
 
   if (timedOut) {
-    gradeResult = { score: 0, passed: false, detail: { reason: 'tiempo agotado' } };
+    gradeResult = { score: 0, passed: false, detail: { reason: 'time expired' } };
   } else if (attempt.challengeType === 'code') {
     const code = answer?.code || '';
     gradeResult = gradeCodeChallenge(code, attempt.secretSnapshot);
@@ -340,7 +350,7 @@ app.post('/api/attempts/:id/submit', (req, res) => {
   } else if (attempt.challengeType === 'open') {
     gradeResult = gradeOpenChallenge(answer?.answers || {}, attempt.secretSnapshot.questions);
   } else {
-    return res.status(400).json({ error: 'Tipo de reto desconocido.' });
+    return res.status(400).json({ error: 'Unknown challenge type.' });
   }
 
   const updated = db.updateAttempt(attempt.id, {

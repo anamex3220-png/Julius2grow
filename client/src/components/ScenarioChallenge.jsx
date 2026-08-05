@@ -42,7 +42,7 @@ export default function ScenarioChallenge({ attemptId, challenge, integrityMode,
       <p className="muted">{challenge.prompt}</p>
       {strict && (
         <p className="muted" style={{ fontSize: '0.8rem' }}>
-          🔒 Modo estricto activo: no se puede pegar texto y se solicitó pantalla completa.
+          🔒 Strict mode active: pasting text is disabled and fullscreen was requested.
         </p>
       )}
 
@@ -56,28 +56,28 @@ export default function ScenarioChallenge({ attemptId, challenge, integrityMode,
 
       {!done ? (
         <>
-          <label htmlFor="reply">Tu respuesta</label>
+          <label htmlFor="reply">Your reply</label>
           <textarea
             id="reply"
             ref={integrity.attachTextarea}
             rows={3}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Escribe tu respuesta al cliente..."
+            placeholder="Write your reply to the customer..."
           />
           {error && <p className="error-text">{error}</p>}
           <button onClick={handleSend} disabled={sending || !message.trim()}>
-            {sending ? 'Enviando...' : 'Responder'}
+            {sending ? 'Sending...' : 'Reply'}
           </button>
         </>
       ) : (
         <>
-          <p className="muted">La conversación terminó. Envía tu reto para calificarlo.</p>
+          <p className="muted">The conversation ended. Submit your challenge for grading.</p>
           <button
             onClick={() => onSubmit({}, integrity.getSignals(totalCharsRef.current))}
             disabled={submitting}
           >
-            {submitting ? 'Enviando...' : 'Enviar y calificar'}
+            {submitting ? 'Submitting...' : 'Submit for grading'}
           </button>
         </>
       )}

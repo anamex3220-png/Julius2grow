@@ -37,27 +37,27 @@ export default function CandidateStart() {
   }
 
   if (error && !campaign) return <p className="error-text">{error}</p>;
-  if (!campaign) return <p className="muted">Cargando...</p>;
+  if (!campaign) return <p className="muted">Loading...</p>;
 
   return (
     <div>
       <h1>{campaign.title}</h1>
       <p className="lede">
         {campaign.company ? `${campaign.company} · ` : ''}
-        {campaign.skillLabel}
+        {campaign.skillLabelEn}
       </p>
 
       <div className="card">
         <h2>{campaign.challenge.title}</h2>
         <p className="muted">{campaign.challenge.prompt}</p>
         <p>
-          ⏱ Este reto está diseñado para resolverse rápido: tienes{' '}
-          <strong>{Math.round(campaign.timeLimitSeconds / 60)} minutos</strong> desde que empieces.
-          No hay segunda oportunidad, así que prepárate antes de dar clic en "Empezar".
+          ⏱ This challenge is designed to be solved quickly: you have{' '}
+          <strong>{Math.round(campaign.timeLimitSeconds / 60)} minutes</strong> once you start.
+          There's no second attempt, so get ready before clicking "Start".
         </p>
         {strict && (
           <p className="muted" style={{ fontSize: '0.85rem' }}>
-            🔒 Este reto pedirá pantalla completa y no permitirá pegar texto en tus respuestas.
+            🔒 This challenge will request fullscreen and will not allow pasting text into your answers.
           </p>
         )}
       </div>
@@ -75,25 +75,25 @@ export default function CandidateStart() {
         </p>
       </div>
 
-      <div className="card">
-        <h2 style={{ fontSize: '1rem' }}>Aviso de privacidad</h2>
-        <p className="muted" style={{ fontSize: '0.88rem' }}>
-          Al resolver este reto se guardan tu nombre, correo (si lo dejas), tus respuestas, tu
-          calificación, y algunas señales técnicas de la sesión (por ejemplo si pegaste texto o cambiaste
-          de pestaña). Esta información es solo para uso interno del equipo de reclutamiento — la
-          herramienta no te muestra tu calificación ni el resultado a ti.{' '}
-          {campaign.contactEmail
-            ? `Si quieres pedir que se elimine tu información, escribe a ${campaign.contactEmail}.`
-            : 'Si quieres pedir que se elimine tu información, contacta a quien te compartió este enlace.'}
-        </p>
-      </div>
-
       <form className="card" onSubmit={handleSubmit}>
-        <label htmlFor="name">Tu nombre</label>
+        <label htmlFor="name">Your name</label>
         <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
 
-        <label htmlFor="email">Tu correo (opcional)</label>
+        <label htmlFor="email">Your email (optional)</label>
         <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: '1rem' }}>Privacy notice</h2>
+          <p className="muted" style={{ fontSize: '0.88rem' }}>
+            Completing this challenge saves your name, email (if you provide one), your answers, your
+            score, and a few technical signals from the session (for example, whether you pasted text or
+            switched tabs). This information is for internal use by the recruiting team only — the tool
+            does not show you your score or result.{' '}
+            {campaign.contactEmail
+              ? `If you'd like to request that your information be deleted, write to ${campaign.contactEmail}.`
+              : "If you'd like to request that your information be deleted, contact whoever shared this link with you."}
+          </p>
+        </div>
 
         <label htmlFor="consent" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontWeight: 400 }}>
           <input
@@ -103,13 +103,13 @@ export default function CandidateStart() {
             onChange={(e) => setConsent(e.target.checked)}
             style={{ marginTop: 3 }}
           />
-          <span>Acepto que mis respuestas y datos se guarden y se compartan con el equipo de reclutamiento para fines de evaluación.</span>
+          <span>I agree that my answers and data will be stored and shared with the recruiting team for evaluation purposes.</span>
         </label>
 
         {error && <p className="error-text">{error}</p>}
 
         <button type="submit" disabled={loading || !consent}>
-          {loading ? 'Preparando...' : 'Empezar reto'}
+          {loading ? 'Getting ready...' : 'Start challenge'}
         </button>
       </form>
     </div>

@@ -7,7 +7,7 @@ export default function CodeChallenge({ challenge, onSubmit, submitting }) {
     <div className="card">
       <h2>{challenge.title}</h2>
       <p className="muted">{challenge.prompt}</p>
-      <label htmlFor="code">Tu código</label>
+      <label htmlFor="code">Your code</label>
       <textarea
         id="code"
         className="code"
@@ -16,7 +16,7 @@ export default function CodeChallenge({ challenge, onSubmit, submitting }) {
         spellCheck={false}
       />
       <button onClick={() => onSubmit({ code })} disabled={submitting}>
-        {submitting ? 'Enviando...' : 'Enviar y calificar'}
+        {submitting ? 'Submitting...' : 'Submit for grading'}
       </button>
     </div>
   );

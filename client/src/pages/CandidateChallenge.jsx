@@ -52,15 +52,15 @@ export default function CandidateChallenge() {
   }, [handleSubmit]);
 
   if (error) return <p className="error-text">{error}</p>;
-  if (!attempt || !campaign) return <p className="muted">Cargando...</p>;
+  if (!attempt || !campaign) return <p className="muted">Loading...</p>;
 
   if (result) {
     return (
       <div className="card">
-        <h1>{result.status === 'timeout' ? 'Se acabó el tiempo' : '¡Reto enviado! 🎉'}</h1>
+        <h1>{result.status === 'timeout' ? 'Time\'s up' : 'Challenge submitted! 🎉'}</h1>
         <p className="lede" style={{ marginBottom: 0 }}>
-          Gracias por tu tiempo, {result.candidateName}. Tu respuesta quedó registrada y el equipo de
-          reclutamiento la va a revisar. Ellos se pondrán en contacto contigo con los siguientes pasos.
+          Thanks for your time, {result.candidateName}. Your answer has been recorded and the recruiting
+          team will review it. They'll reach out to you with next steps.
         </p>
       </div>
     );

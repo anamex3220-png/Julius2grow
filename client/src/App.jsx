@@ -1,4 +1,5 @@
-import { Routes, Route, Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import CreateCampaign from './pages/CreateCampaign.jsx';
 import MyChallenges from './pages/MyChallenges.jsx';
@@ -11,8 +12,20 @@ import Login from './pages/Login.jsx';
 import RequireAuth from './RequireAuth.jsx';
 import { useAuth } from './auth.jsx';
 
+// El link del candidato (/c/:campaignId y todo lo que cuelga de ahí) está
+// 100% en inglés; el resto de la herramienta (administración) está en
+// español. Refleja eso en el atributo lang del documento para lectores de
+// pantalla, ya que es un solo index.html para toda la SPA.
+function useDocumentLang() {
+  const location = useLocation();
+  useEffect(() => {
+    document.documentElement.lang = location.pathname.startsWith('/c/') ? 'en' : 'es';
+  }, [location.pathname]);
+}
+
 export default function App() {
   const { token, logout } = useAuth();
+  useDocumentLang();
 
   return (
     <div className="app-shell">
@@ -31,7 +44,7 @@ export default function App() {
               </button>
             </>
           ) : (
-            <Link to="/login">Acceso reclutadores</Link>
+            <Link to="/login">Recruiter access</Link>
           )}
         </nav>
       </header>
