@@ -13,13 +13,12 @@ export default function Home() {
 
   return (
     <div>
-      <h1>Contrata por lo que la gente sabe hacer, no por lo que escribe en un PDF.</h1>
+      <h1>Crea Retos AI para talento 🚀</h1>
       <p className="lede">
-        El CV se puede inflar con IA en cinco minutos. En vez de leer perfiles, envía
-        a cada candidato un reto diseñado para resolverse rápido, con el objetivo de
-        evaluar al talento de manera técnica y más eficaz — desde marketing (paid
-        media, SEO, content, CRM, automation) hasta tecnología. La plataforma
-        califica automáticamente y tú ves un ranking, no una pila de currículums.
+        El objetivo es simple: evaluar al talento mediante la aplicación de retos en vivo,
+        no de currículums. Eliges una posición del catálogo o armas la tuya, se la
+        compartes a cada candidato, y la plataforma la califica automáticamente — desde
+        marketing (paid media, SEO, content, CRM, automation) hasta tecnología y operaciones.
       </p>
 
       {Object.entries(grouped).map(([categoryLabel, options]) => (

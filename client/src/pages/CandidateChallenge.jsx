@@ -55,24 +55,12 @@ export default function CandidateChallenge() {
   if (!attempt || !campaign) return <p className="muted">Cargando...</p>;
 
   if (result) {
-    const pending = result.passed === null && result.status !== 'timeout';
     return (
-      <div>
-        <h1>{result.status === 'timeout' ? 'Se acabó el tiempo' : '¡Reto enviado!'}</h1>
-        <div className="score-row">
-          <div className="score-tile">
-            <div className="value">{result.score ?? '—'}</div>
-            <div className="label">Puntaje</div>
-          </div>
-          <div className="score-tile">
-            <div className="value">{pending ? 'Pendiente' : result.passed ? 'Sí' : 'No'}</div>
-            <div className="label">Aprobó</div>
-          </div>
-        </div>
-        <p className="muted">
-          {pending
-            ? 'Algunas respuestas necesitan revisión manual del reclutador antes del resultado final.'
-            : 'Gracias por tu tiempo. El equipo de reclutamiento revisará tu resultado.'}
+      <div className="card">
+        <h1>{result.status === 'timeout' ? 'Se acabó el tiempo' : '¡Reto enviado! 🎉'}</h1>
+        <p className="lede" style={{ marginBottom: 0 }}>
+          Gracias por tu tiempo, {result.candidateName}. Tu respuesta quedó registrada y el equipo de
+          reclutamiento la va a revisar. Ellos se pondrán en contacto contigo con los siguientes pasos.
         </p>
       </div>
     );
@@ -91,7 +79,7 @@ export default function CandidateChallenge() {
         <ScenarioChallenge
           attemptId={attemptId}
           challenge={campaign.challenge}
-          integrityMode={campaign.integrityMode}
+          integrityMode={attempt.integrityMode}
           onSubmit={handleSubmit}
           submitting={submitting}
         />
@@ -99,7 +87,7 @@ export default function CandidateChallenge() {
       {campaign.challenge.type === 'open' && (
         <OpenChallenge
           challenge={campaign.challenge}
-          integrityMode={campaign.integrityMode}
+          integrityMode={attempt.integrityMode}
           onSubmit={handleSubmit}
           submitting={submitting}
         />

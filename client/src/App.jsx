@@ -22,12 +22,16 @@ export default function App() {
           Retos - Julius
         </Link>
         <nav>
-          <Link to="/mis-retos">Mis retos</Link>
-          <Link to="/crear">Crear reto</Link>
-          {token && (
-            <button type="button" className="secondary" style={{ padding: '4px 12px', fontSize: '0.85rem' }} onClick={logout}>
-              Salir
-            </button>
+          {token ? (
+            <>
+              <Link to="/mis-retos">Mis retos</Link>
+              <Link to="/crear">Crear reto</Link>
+              <button type="button" className="secondary" style={{ padding: '4px 12px', fontSize: '0.85rem' }} onClick={logout}>
+                Salir
+              </button>
+            </>
+          ) : (
+            <Link to="/login">Acceso reclutadores</Link>
           )}
         </nav>
       </header>

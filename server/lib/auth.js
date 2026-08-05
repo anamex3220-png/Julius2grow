@@ -42,3 +42,13 @@ export function requireAuth(req, res, next) {
   }
   next();
 }
+
+// No bloquea sin sesión — solo marca req.isRecruiter para que una misma ruta
+// pueda devolver más o menos datos según quién pregunta (ej. GET /attempts/:id,
+// que usa tanto el candidato durante su reto como el reclutador en resultados).
+export function optionalAuth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  req.isRecruiter = !!(token && activeSessions.has(token));
+  next();
+}

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { nanoid } from 'nanoid';
 import { db } from './lib/db.js';
-import { checkPassword, createSession, destroySession, requireAuth } from './lib/auth.js';
+import { checkPassword, createSession, destroySession, requireAuth, optionalAuth } from './lib/auth.js';
 import { SKILLS, CATEGORY_LABELS, nextScenarioMessage } from './lib/skills.js';
 import { buildCustomChallenge, ValidationError, CRITERIA } from './lib/customChallenge.js';
 import { QUESTION_BANK, AREA_LABELS } from './lib/questionBank.js';
@@ -46,6 +46,15 @@ function publicCampaign(campaign) {
 
 function publicAttempt(attempt) {
   const { secretSnapshot, ...rest } = attempt;
+  return rest;
+}
+
+// Lo que puede ver quien responde el reto: nunca su puntaje, si aprobó, el
+// desglose de calificación ni las señales anti-IA (eso revelaría qué
+// dispara la detección). El equipo de reclutamiento sí ve todo eso vía
+// publicAttempt, en las rutas protegidas con requireAuth/optionalAuth.
+function candidateAttempt(attempt) {
+  const { secretSnapshot, score, passed, detail, integrity, ...rest } = attempt;
   return rest;
 }
 
@@ -228,7 +237,7 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
   const campaign = db.getCampaign(req.params.id);
   if (!campaign) return res.status(404).json({ error: 'Campaña no encontrada.' });
 
-  const { candidateName, candidateEmail, consent } = req.body || {};
+  const { candidateName, candidateEmail, consent, integrityMode } = req.body || {};
   if (!candidateName || !candidateName.trim()) {
     return res.status(400).json({ error: 'El nombre es obligatorio.' });
   }
@@ -236,12 +245,19 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
     return res.status(400).json({ error: 'Debes aceptar el aviso de privacidad para empezar.' });
   }
 
+  // El modo Anti-IA lo decide el link que usó el candidato (dos enlaces por
+  // reto: uno con bloqueo, otro solo con señales), no una config fija de la
+  // campaña. Si el link no trae modo (enlaces viejos), se usa el default de
+  // la campaña.
+  const resolvedIntegrityMode =
+    integrityMode === 'strict' || integrityMode === 'signals' ? integrityMode : campaign.integrityMode || 'signals';
+
   const attempt = {
     id: nanoid(10),
     campaignId: campaign.id,
     skillId: campaign.skillId,
     challengeType: campaign.challengeType,
-    integrityMode: campaign.integrityMode || 'signals',
+    integrityMode: resolvedIntegrityMode,
     candidateName: candidateName.trim(),
     candidateEmail: (candidateEmail || '').trim(),
     consentAcceptedAt: new Date().toISOString(),
@@ -261,13 +277,16 @@ app.post('/api/campaigns/:id/attempts', (req, res) => {
     secretSnapshot: campaign.challenge.secret,
   };
   db.addAttempt(attempt);
-  res.status(201).json(publicAttempt(attempt));
+  res.status(201).json(candidateAttempt(attempt));
 });
 
-app.get('/api/attempts/:id', (req, res) => {
+// La misma ruta la usa el candidato (mientras responde o al refrescar
+// después de enviar) y el reclutador (pantalla de detalle de resultados).
+// optionalAuth decide cuánto devolver sin bloquear a nadie.
+app.get('/api/attempts/:id', optionalAuth, (req, res) => {
   const attempt = db.getAttempt(req.params.id);
   if (!attempt) return res.status(404).json({ error: 'Intento no encontrado.' });
-  res.json(publicAttempt(attempt));
+  res.json(req.isRecruiter ? publicAttempt(attempt) : candidateAttempt(attempt));
 });
 
 app.post('/api/attempts/:id/scenario/reply', (req, res) => {
@@ -335,7 +354,7 @@ app.post('/api/attempts/:id/submit', (req, res) => {
     integrity: integrity || null,
   });
 
-  res.json(publicAttempt(updated));
+  res.json(candidateAttempt(updated));
 });
 
 // Calificación manual de preguntas abiertas sin rúbrica de palabras clave

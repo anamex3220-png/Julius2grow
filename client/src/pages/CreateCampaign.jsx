@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import CustomChallengeForm from '../components/CustomChallengeForm.jsx';
+import CandidateLinks from '../components/CandidateLinks.jsx';
 
 export default function CreateCampaign() {
   const [mode, setMode] = useState('catalog'); // 'catalog' | 'custom'
@@ -56,25 +57,19 @@ export default function CreateCampaign() {
   }
 
   if (created) {
-    const candidateLink = `${window.location.origin}/c/${created.id}`;
     const resultsLink = `/resultados/${created.id}`;
     return (
       <div>
         <h1>Reto listo 🎉</h1>
         <p className="lede">
-          Comparte este enlace con tus candidatos para <strong>{created.title}</strong>.
-          Cada uno tiene {Math.round(created.timeLimitSeconds / 60)} minutos.
+          Comparte uno de estos enlaces con tus candidatos para <strong>{created.title}</strong>. Ambos
+          llevan al mismo reto y al mismo concentrado de candidatos — cada uno tiene{' '}
+          {Math.round(created.timeLimitSeconds / 60)} minutos.
         </p>
-        <div className="card">
-          <label>Enlace para candidatos</label>
-          <div className="link-box">{candidateLink}</div>
-          <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-            <button onClick={() => navigator.clipboard.writeText(candidateLink)}>Copiar enlace</button>
-            <button className="secondary" onClick={() => navigate(resultsLink)}>
-              Ver resultados
-            </button>
-          </div>
-        </div>
+        <CandidateLinks campaignId={created.id} />
+        <button className="secondary" onClick={() => navigate(resultsLink)}>
+          Ver resultados
+        </button>
       </div>
     );
   }
@@ -97,33 +92,26 @@ export default function CreateCampaign() {
 
       {mode === 'catalog' ? (
         <form onSubmit={handleSubmitCatalog}>
-          <label>Skill a evaluar</label>
+          <label htmlFor="skill-select">Skill a evaluar, por categoría</label>
           {!skills ? (
             <p className="muted">Cargando catálogo de skills...</p>
           ) : (
-            Object.entries(grouped).map(([categoryLabel, options]) => (
-              <div key={categoryLabel} style={{ marginBottom: 16 }}>
-                <p className="muted" style={{ margin: '0 0 8px', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  {categoryLabel}
-                </p>
-                <div className="grid-3">
+            <select id="skill-select" value={skillId} onChange={(e) => setSkillId(e.target.value)}>
+              {Object.entries(grouped).map(([categoryLabel, options]) => (
+                <optgroup key={categoryLabel} label={categoryLabel}>
                   {options.map((opt) => (
-                    <div
-                      key={opt.id}
-                      className={`card role-card ${skillId === opt.id ? 'selected' : ''}`}
-                      onClick={() => setSkillId(opt.id)}
-                    >
-                      <strong>
-                        {opt.icon} {opt.label}
-                      </strong>
-                      <p className="muted" style={{ marginBottom: 0 }}>
-                        {opt.description}
-                      </p>
-                    </div>
+                    <option key={opt.id} value={opt.id}>
+                      {opt.icon} {opt.label}
+                    </option>
                   ))}
-                </div>
-              </div>
-            ))
+                </optgroup>
+              ))}
+            </select>
+          )}
+          {skillId && skills && (
+            <p className="muted" style={{ marginTop: -10, marginBottom: 16, fontSize: '0.88rem' }}>
+              {skills.find((s) => s.id === skillId)?.description}
+            </p>
           )}
 
           <label htmlFor="title">Título del puesto</label>

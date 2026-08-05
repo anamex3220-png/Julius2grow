@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 
 export default function CandidateStart() {
   const { campaignId } = useParams();
+  const [searchParams] = useSearchParams();
+  const strict = searchParams.get('modo') === 'estricto';
   const [campaign, setCampaign] = useState(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,7 +23,12 @@ export default function CandidateStart() {
     setError('');
     setLoading(true);
     try {
-      const attempt = await api.startAttempt(campaignId, { candidateName: name, candidateEmail: email, consent });
+      const attempt = await api.startAttempt(campaignId, {
+        candidateName: name,
+        candidateEmail: email,
+        consent,
+        integrityMode: strict ? 'strict' : 'signals',
+      });
       navigate(`/c/${campaignId}/reto/${attempt.id}`);
     } catch (err) {
       setError(err.message);
@@ -48,6 +55,11 @@ export default function CandidateStart() {
           <strong>{Math.round(campaign.timeLimitSeconds / 60)} minutos</strong> desde que empieces.
           No hay segunda oportunidad, así que prepárate antes de dar clic en "Empezar".
         </p>
+        {strict && (
+          <p className="muted" style={{ fontSize: '0.85rem' }}>
+            🔒 Este reto pedirá pantalla completa y no permitirá pegar texto en tus respuestas.
+          </p>
+        )}
       </div>
 
       <div className="card" style={{ borderColor: 'var(--warn)' }}>
@@ -66,10 +78,10 @@ export default function CandidateStart() {
       <div className="card">
         <h2 style={{ fontSize: '1rem' }}>Aviso de privacidad</h2>
         <p className="muted" style={{ fontSize: '0.88rem' }}>
-          Al resolver este reto se guardan tu nombre, correo (si lo dejas), tus respuestas, tu puntaje, y
-          algunas señales técnicas de la sesión (por ejemplo si pegaste texto o cambiaste de pestaña).
-          Esta información la usa el equipo de reclutamiento únicamente para evaluar tu desempeño en este
-          proceso.{' '}
+          Al resolver este reto se guardan tu nombre, correo (si lo dejas), tus respuestas, tu
+          calificación, y algunas señales técnicas de la sesión (por ejemplo si pegaste texto o cambiaste
+          de pestaña). Esta información es solo para uso interno del equipo de reclutamiento — la
+          herramienta no te muestra tu calificación ni el resultado a ti.{' '}
           {campaign.contactEmail
             ? `Si quieres pedir que se elimine tu información, escribe a ${campaign.contactEmail}.`
             : 'Si quieres pedir que se elimine tu información, contacta a quien te compartió este enlace.'}

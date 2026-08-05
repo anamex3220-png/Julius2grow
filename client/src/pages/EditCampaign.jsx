@@ -44,7 +44,6 @@ export default function EditCampaign() {
             company: campaign.company,
             contactEmail: campaign.contactEmail,
             minutes: Math.round(campaign.timeLimitSeconds / 60),
-            integrityMode: campaign.integrityMode,
             prompt: campaign.challenge.prompt,
             image: campaign.challenge.image,
             table: campaign.challenge.table,
@@ -70,7 +69,6 @@ function MetadataOnlyForm({ campaign, onSaved }) {
   const [title, setTitle] = useState(campaign.title);
   const [company, setCompany] = useState(campaign.company);
   const [contactEmail, setContactEmail] = useState(campaign.contactEmail);
-  const [integrityMode, setIntegrityMode] = useState(campaign.integrityMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -79,7 +77,7 @@ function MetadataOnlyForm({ campaign, onSaved }) {
     setError('');
     setLoading(true);
     try {
-      await api.updateCampaign(campaign.id, { title, company, contactEmail, integrityMode });
+      await api.updateCampaign(campaign.id, { title, company, contactEmail });
       onSaved();
     } catch (err) {
       setError(err.message);
@@ -102,12 +100,6 @@ function MetadataOnlyForm({ campaign, onSaved }) {
 
       <label htmlFor="e-contact-email">Correo de contacto para candidatos (opcional)</label>
       <input id="e-contact-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-
-      <label htmlFor="e-integrity">Anti-IA</label>
-      <select id="e-integrity" value={integrityMode} onChange={(e) => setIntegrityMode(e.target.value)}>
-        <option value="signals">Solo señales — avisa, no bloquea (recomendado)</option>
-        <option value="strict">Estricto — bloquea pegar texto y pide pantalla completa</option>
-      </select>
 
       {error && <p className="error-text">{error}</p>}
 

@@ -41,7 +41,8 @@ export default function AttemptDetail() {
       </div>
       <h1 style={{ marginTop: 12 }}>{attempt.candidateName}</h1>
       <p className="lede">
-        {attempt.candidateEmail} · {campaign.skillLabel} · {attempt.status}
+        {attempt.candidateEmail} · {campaign.skillLabel} · {attempt.status} ·{' '}
+        {attempt.integrityMode === 'strict' ? '🔒 Modo bloqueo' : '👀 Modo señales'}
       </p>
       {attempt.consentAcceptedAt && (
         <p className="muted" style={{ fontSize: '0.78rem', marginTop: -8 }}>

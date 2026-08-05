@@ -3,7 +3,8 @@
 Plataforma de reclutamiento basada en retos diseñados para resolverse rápido,
 en vez de CVs. En lugar de leer perfiles inflados, el candidato resuelve en
 su celular un reto pensado para evaluarlo de forma técnica y más eficaz, y la
-plataforma lo califica automáticamente.
+plataforma lo califica automáticamente. El candidato nunca ve su puntaje ni
+la sección de administración — eso es solo para quien inicia sesión.
 
 ## Catálogo de skills
 
@@ -94,9 +95,10 @@ que quieren armar su propio reto — sin código:
 
 Todo candidato ve, antes de empezar, un aviso fijo (en inglés, tal como lo
 pidió el equipo) advirtiendo que el sistema detecta el uso de IA u otros
-recursos externos y que eso invalida la aplicación — independiente del
-`integrityMode` que tenga esa campaña. Vive hardcodeado en
-`CandidateStart.jsx`; es un elemento disuasorio, no una prueba técnica en sí
+recursos externos y que eso invalida la aplicación — independiente de qué
+link haya usado (bloqueo o solo señales, ver "Anti-IA" abajo). Vive
+hardcodeado en `CandidateStart.jsx`; es un elemento disuasorio, no una
+prueba técnica en sí
 (la prueba técnica son las señales descritas abajo).
 
 ## Login
@@ -109,9 +111,12 @@ tanto en el cliente (`RequireAuth.jsx` redirige a `/login` si no hay sesión)
 como en el servidor (`requireAuth` en `server/lib/auth.js` rechaza con 401
 las rutas de creación/edición/borrado/resultados sin un token válido).
 
-El candidato **nunca ve el login** — su flujo entero (`/c/:campaignId` y
-todo lo que cuelga de ahí) sigue siendo público a propósito, porque solo
-tiene el link que le compartes.
+El candidato **nunca ve el login ni la navegación de reclutador** — su
+flujo entero (`/c/:campaignId` y todo lo que cuelga de ahí) sigue siendo
+público a propósito, porque solo tiene el link que le compartes. Sin
+sesión, la barra superior (`App.jsx`) no muestra los links "Mis retos" ni
+"Crear reto" — solo un link genérico "Acceso reclutadores" hacia `/login`,
+para que quien no está logueado no vea ni el nombre de esas secciones.
 
 - La contraseña vive en la variable de entorno `ADMIN_PASSWORD` — nunca en
   el código ni en git. Si no está configurada, el servidor arranca con una
@@ -137,8 +142,10 @@ candidatos ha respondido cada una. Desde ahí:
 
 - **Ver resultados** — va al ranking de esa campaña (ya existía).
 - **Editar** — para retos del catálogo, solo se edita metadata (título,
-  empresa, correo de contacto, modo anti-IA); el contenido del reto viene
-  del skill y no se toca ahí. Para retos personalizados (`open`), se edita
+  empresa, correo de contacto); el contenido del reto viene del skill y no
+  se toca ahí. El modo anti-IA ya no se edita como config del reto — ver
+  "Anti-IA" abajo, ahora lo decide el link que usa el candidato. Para retos
+  personalizados (`open`), se edita
   todo con el mismo formulario del constructor (`CustomChallengeForm.jsx`,
   compartido entre crear y editar), precargado incluyendo las palabras
   clave de cada pregunta — esas viven en `secret` y nunca se le mandan al
@@ -155,24 +162,45 @@ Todas las rutas de este panel están detrás del login — ver la sección
 No existe una forma de garantizar al 100% que un candidato no consultó una
 IA en otro dispositivo — cualquier producto que lo prometa está exagerando.
 Lo que sí se puede hacer es poner fricción y dejar señales para que el
-reclutador decida. Cada reto personalizado elige un modo (`integrityMode`):
+reclutador decida. Hay dos modos (`integrityMode`):
 
-- **`signals`** (default) — no bloquea nada, pero detecta y muestra en el
-  detalle del intento: cuántas veces se intentó pegar texto, cuántas veces
-  se cambió de pestaña/ventana (y cuánto tiempo estuvo fuera), y si apareció
-  más texto del que se tecleó (proxy de "algo insertó texto sin que lo
-  escribieran" — autocompletado, extensión, u otra vía).
+- **`signals`** — no bloquea nada, pero detecta y muestra en el detalle del
+  intento: cuántas veces se intentó pegar texto, cuántas veces se cambió de
+  pestaña/ventana (y cuánto tiempo estuvo fuera), y si apareció más texto
+  del que se tecleó (proxy de "algo insertó texto sin que lo escribieran" —
+  autocompletado, extensión, u otra vía).
 - **`strict`** — todo lo anterior, más: pegar texto queda deshabilitado de
   verdad en las respuestas (`preventDefault` en el evento `paste`) y se
   solicita pantalla completa al candidato (los navegadores no permiten
   bloquear la tecla Esc, así que se detectan y cuentan las salidas en vez de
   impedirlas).
 
+**El modo ya no es una config fija del reto — lo decide el link que
+compartes.** Cada reto genera automáticamente dos enlaces de candidato,
+ambos apuntando al mismo reto y al mismo concentrado de resultados en
+`/resultados/:campaignId`:
+
+- `https://tu-dominio/c/:campaignId?modo=estricto` — bloqueo total.
+  Recomendado si el candidato responde solo, sin supervisión (por ejemplo
+  desde su casa).
+- `https://tu-dominio/c/:campaignId?modo=senales` — solo señales, sin
+  bloquear nada. Recomendado si ya supervisas al candidato o prefieres no
+  restringir su navegador.
+
+Los dos enlaces se muestran en la pantalla de "Reto listo" al crear el reto,
+y de nuevo en `/resultados/:campaignId` por si los necesitas después. El
+modo que usó cada candidato se guarda en su intento (no en la campaña) y se
+muestra como columna "Modo" en el ranking y en el detalle de cada intento —
+así puedes mandar el link que quieras según el caso sin perder de vista
+quién respondió con cuál.
+
 Estas señales viven en `client/src/integrity.js` (se activan por textarea vía
 `ref`) y se guardan en `attempt.integrity`, visibles como ⚠️ en el ranking y
-desglosadas en el detalle del intento. Aplican a los tipos `scenario` y
-`open` — los tipos `code`/`diagnosis` no bloquean pegar porque ahí sí es
-legítimo que el candidato pegue su propio código o un valor.
+desglosadas en el detalle del intento — **solo para el reclutador**: el
+candidato nunca recibe esta información, para no revelarle qué dispara la
+detección. Aplican a los tipos `scenario` y `open` — los tipos
+`code`/`diagnosis` no bloquean pegar porque ahí sí es legítimo que el
+candidato pegue su propio código o un valor.
 
 ## Datos de candidatos: privacidad, borrado y persistencia
 
@@ -193,6 +221,16 @@ para manejar eso con cuidado:
   "🗑 Eliminar este intento" que lo borra por completo
   (`DELETE /api/attempts/:id`). No hay borrado automático por tiempo — es
   una acción explícita cuando alguien lo pide.
+- **El candidato nunca ve su puntaje**: la pantalla de confirmación al
+  enviar el reto (`CandidateChallenge.jsx`) solo agradece y avisa que el
+  equipo lo va a revisar — no muestra puntaje, si aprobó, ni desglose. Esto
+  se refuerza en el servidor, no solo escondiendo la UI: `GET
+  /api/attempts/:id` usa `optionalAuth` para devolver el intento completo
+  solo si quien pregunta tiene sesión de reclutador; sin sesión (el
+  candidato) recibe una versión sin `score`/`passed`/`detail`/`integrity`
+  (`candidateAttempt()` en `server/index.js`). `POST
+  /api/attempts/:id/submit` siempre responde con esa versión reducida,
+  porque quien llama esa ruta siempre es el candidato.
 
 ### Que los datos sobrevivan a un redeploy (disco persistente en Render)
 
@@ -223,17 +261,21 @@ migrar el servicio que ya tienes corriendo.
 
 ## Flujo
 
-1. **Reclutador**: entra a `/crear`, elige el skill del catálogo, pone el
-   título del puesto y obtiene un enlace único (`/c/:campaignId`).
-2. **Candidato**: abre el enlace en su celular, pone su nombre y arranca el
-   reto — sin cuenta ni registro previo.
+1. **Reclutador**: inicia sesión, entra a `/crear`, elige el skill del
+   catálogo (dropdown agrupado por categoría) o arma uno personalizado, pone
+   el título del puesto y obtiene dos enlaces (bloqueo total / solo señales,
+   ver "Anti-IA" arriba).
+2. **Candidato**: abre el enlace que le compartieron en su celular, pone su
+   nombre y arranca el reto — sin cuenta ni registro previo.
 3. **Calificación**: automática e inmediata al enviar (o al agotarse el
-   tiempo).
+   tiempo). El candidato solo ve un mensaje de agradecimiento, nunca su
+   puntaje.
 4. **Reclutador**: entra a `/resultados/:campaignId` y ve un ranking en vivo
-   (se refresca cada 5s), ordenado por puntaje. Puede entrar a cada intento
-   para ver el detalle — código enviado y resultados de pruebas, transcripción
-   completa del chat con el desglose por dimensión, o los datos evaluados
-   comparados contra la respuesta correcta.
+   (se refresca cada 5s), ordenado por puntaje, con el modo Anti-IA que usó
+   cada candidato. Puede entrar a cada intento para ver el detalle — código
+   enviado y resultados de pruebas, transcripción completa del chat con el
+   desglose por dimensión, o los datos evaluados comparados contra la
+   respuesta correcta.
 
 ## Arquitectura
 
@@ -270,7 +312,9 @@ client/   SPA en React + Vite + react-router
                                `type`, genéricos — no por skill) + Timer +
                                CustomChallengeForm (constructor, compartido
                                entre crear y editar) + TableEditor /
-                               ImageUploadField / QuestionBankPicker
+                               ImageUploadField / QuestionBankPicker +
+                               CandidateLinks (los dos enlaces por reto,
+                               compartido entre crear y resultados)
 ```
 
 No hay base de datos externa ni cuentas individuales — es un MVP para

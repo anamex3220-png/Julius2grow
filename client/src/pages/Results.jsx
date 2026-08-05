@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
+import CandidateLinks from '../components/CandidateLinks.jsx';
+
+const MODE_LABEL = {
+  strict: { text: '🔒 Bloqueo', cls: 'pending' },
+  signals: { text: '👀 Señales', cls: 'pending' },
+};
 
 const STATUS_LABEL = {
   in_progress: { text: 'En curso', cls: 'pending' },
@@ -41,7 +47,6 @@ export default function Results() {
   if (!data) return <p className="muted">Cargando resultados...</p>;
 
   const { campaign, attempts } = data;
-  const candidateLink = `${window.location.origin}/c/${campaign.id}`;
 
   return (
     <div>
@@ -50,18 +55,12 @@ export default function Results() {
         {campaign.categoryLabel} · {campaign.skillLabel} {campaign.company ? `· ${campaign.company}` : ''}
       </p>
 
-      <div className="card">
-        <label>Enlace para candidatos</label>
-        <div className="link-box">{candidateLink}</div>
-        <button style={{ marginTop: 12 }} onClick={() => navigator.clipboard.writeText(candidateLink)}>
-          Copiar enlace
-        </button>
-      </div>
+      <CandidateLinks campaignId={campaign.id} />
 
       <div className="card">
         <h2>Ranking ({attempts.length} candidatos)</h2>
         {attempts.length === 0 ? (
-          <p className="muted">Nadie ha tomado el reto todavía. Comparte el enlace de arriba.</p>
+          <p className="muted">Nadie ha tomado el reto todavía. Comparte alguno de los enlaces de arriba.</p>
         ) : (
           <table>
             <thead>
@@ -70,6 +69,7 @@ export default function Results() {
                 <th>Candidato</th>
                 <th>Puntaje</th>
                 <th>Estado</th>
+                <th>Modo</th>
                 <th>Tiempo</th>
               </tr>
             </thead>
@@ -77,6 +77,7 @@ export default function Results() {
               {attempts.map((a, idx) => {
                 const pending = a.status === 'submitted' && a.challengeType === 'open' && a.detail?.pendingReview;
                 const status = pending ? { text: 'Pendiente de revisión', cls: 'pending' } : STATUS_LABEL[a.status] || STATUS_LABEL.in_progress;
+                const mode = MODE_LABEL[a.integrityMode] || MODE_LABEL.signals;
                 return (
                   <tr
                     key={a.id}
@@ -91,6 +92,9 @@ export default function Results() {
                     <td>{a.score ?? '—'}</td>
                     <td>
                       <span className={`badge ${status.cls}`}>{status.text}</span>
+                    </td>
+                    <td>
+                      <span className={`badge ${mode.cls}`}>{mode.text}</span>
                     </td>
                     <td>{a.durationSeconds != null ? formatDuration(a.durationSeconds) : '—'}</td>
                   </tr>

@@ -20,7 +20,6 @@ export default function CustomChallengeForm({ initialValues, submitLabel, onSubm
   const [company, setCompany] = useState(initialValues?.company ?? '');
   const [contactEmail, setContactEmail] = useState(initialValues?.contactEmail ?? '');
   const [minutes, setMinutes] = useState(initialValues?.minutes ?? 20);
-  const [integrityMode, setIntegrityMode] = useState(initialValues?.integrityMode ?? 'signals');
   const [prompt, setPrompt] = useState(initialValues?.prompt ?? '');
   const [image, setImage] = useState(initialValues?.image ?? null);
   const [useTable, setUseTable] = useState(Boolean(initialValues?.table));
@@ -56,7 +55,6 @@ export default function CustomChallengeForm({ initialValues, submitLabel, onSubm
       company,
       contactEmail,
       timeLimitMinutes: minutes,
-      integrityMode,
       challenge: {
         prompt,
         image,
@@ -86,15 +84,9 @@ export default function CustomChallengeForm({ initialValues, submitLabel, onSubm
       <label htmlFor="c-minutes">Minutos para responder</label>
       <input id="c-minutes" type="number" min={5} max={60} value={minutes} onChange={(e) => setMinutes(e.target.value)} />
 
-      <label htmlFor="c-integrity">Anti-IA</label>
-      <select id="c-integrity" value={integrityMode} onChange={(e) => setIntegrityMode(e.target.value)}>
-        <option value="signals">Solo señales — avisa, no bloquea (recomendado)</option>
-        <option value="strict">Estricto — bloquea pegar texto y pide pantalla completa</option>
-      </select>
       <p className="muted" style={{ marginTop: -10, marginBottom: 16, fontSize: '0.82rem' }}>
-        {integrityMode === 'strict'
-          ? 'El candidato no podrá pegar texto en sus respuestas y se le pedirá pantalla completa. Sigue sin ser infalible (puede usar otro dispositivo), pero pone más fricción.'
-          : 'Se detectan pegar texto, cambios de pestaña y patrones de escritura poco humanos, y se muestran como avisos junto al puntaje — sin bloquear nada.'}
+        Al terminar vas a recibir dos enlaces para compartir — uno con bloqueo total y otro solo con
+        señales. Eliges cuál mandar según el caso.
       </p>
 
       <label htmlFor="c-prompt">Contexto general (opcional)</label>
